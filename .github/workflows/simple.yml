@@ -5,7 +5,7 @@ on:
       branches: [rrfs_ci_simple]
   workflow_dispatch:
 
-  defaults:
+defaults:
   run:
     shell: bash -leo pipefail {0}
 
