@@ -118,16 +118,30 @@ for fhr in ${bcs_fhrs[@]} ; do
 
   outfile=${combined_file/FHR/$fhr}
   get_files ${urla}/${filea}${fhr} ${urlb}/${fileb}${fhr}
+
+
+  # For the first GFS forecast time, no further processing is needed. Don't use the "b" file.
+  if [ ${EXTRN_MDL_NAME_ICS} = "FV3GFS" ] && [ ${fhr} == ${first_hour} ] ; then
+    rm -rf ${fileb}${fhr}
+    extrn_mdl_fns+=("${filea}${fhr}")
+    continue
+  fi
+
+  # For all other forecast times (all times for GEFS), combine and remove duplicates as needed.
   cat ${filea}${fhr} ${fileb}${fhr} > ${outfile}
 
+  # Remove original files (they exist in the outfile)
   rm -rf ${filea}${fhr} ${fileb}${fhr}
 
   if [ ${EXTRN_MDL_NAME_ICS} = "FV3GFS" ] ; then
 
-    # Use wgrib2 to remove duplicate entries from the GFS files
+    # Use wgrib2 to remove duplicate entries from the GFS files. 
+    # Writes out file with the same name as the "a" file
     wgrib2 ${combined_file/FHR/$fhr} -submsg 1 | \
       ${USHDIR}/grib2_unique.pl | \
       wgrib2 -i ${combined_file/FHR/$fhr} -GRIB ${outfile/_tmp/}
+
+    # Remove the _tmp file
     rm -rf ${outfile}
   fi
 
