@@ -19,7 +19,6 @@
 . $USHDIR/make_grid_mosaic_file.sh
 . $USHDIR/link_fix.sh
 . $USHDIR/set_FV3nml_sfc_climo_filenames.sh
-. $USHDIR/create_diag_table_files.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -84,7 +83,7 @@ print_input_args valid_args
 #
 #-----------------------------------------------------------------------
 #
-case $MACHINE in
+case "$MACHINE" in
 
   "WCOSS_CRAY")
     { save_shell_opts; set +x; } > /dev/null 2>&1
@@ -358,6 +357,7 @@ generation executable (exec_fp):
     'dely': ${DEL_ANGLE_Y_SG},
     'lx': ${NEG_NX_OF_DOM_WITH_WIDE_HALO},
     'ly': ${NEG_NY_OF_DOM_WITH_WIDE_HALO},
+    'pazi': ${PAZI},
  }
 "
 #
@@ -647,10 +647,6 @@ failed."
 set_FV3nml_sfc_climo_filenames || print_err_msg_exit "\
 Call to function to set surface climatology file names in the FV3 namelist
 file failed."
-
-create_diag_table_files || print_err_msg_exit "\
-Call to function to create a diagnostics table file under each cycle
-directory failed."
 #
 #-----------------------------------------------------------------------
 #
