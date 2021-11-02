@@ -115,6 +115,12 @@ case $MACHINE in
   ulimit -a
   APRUN="srun -n 1"
   ;;
+
+"LINUX")
+  ulimit -s unlimited
+  ulimit -a
+  APRUN=${RUN_COMMAND_DA}
+  ;;
 #
 esac
 #

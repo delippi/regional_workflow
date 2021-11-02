@@ -115,6 +115,9 @@ case $MACHINE in
   APRUN="srun -n 1"
   ;;
 #
+"LINUX")
+  APRUN=${RUN_CMD_DATAPROC}
+  ;;
 esac
 #
 #-----------------------------------------------------------------------

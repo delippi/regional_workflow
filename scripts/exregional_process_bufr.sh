@@ -115,6 +115,10 @@ case $MACHINE in
   ulimit -a
   APRUN="srun"
   ;;
+
+"LINUX")
+  APRUN=${RUN_CMD_DATAPROC}
+  ;;
 #
 esac
 #

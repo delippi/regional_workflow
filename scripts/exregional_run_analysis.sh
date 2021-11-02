@@ -135,6 +135,13 @@ case $MACHINE in
   APRUN="srun -n ${PE_MEMBER01}"
   ;;
 #
+"LINUX")
+  ulimit -s unlimited
+  ulimit -a
+  export OMP_NUM_THREADS=1
+  export OMP_STACKSIZE=300M
+  APRUN=${RUN_CMD_DA}
+  ;;
 esac
 #
 #-----------------------------------------------------------------------
