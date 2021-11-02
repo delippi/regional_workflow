@@ -51,7 +51,7 @@ export account=$2
 # Choose experiment.
 #-----------------------------------------------------------------------
 
-expts=( grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GSD_SAR grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v16)
+expts=("grid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GSD_SAR\ngrid_RRFS_CONUS_25km_ics_FV3GFS_lbcs_FV3GFS_suite_GFS_v16")
 
 #-----------------------------------------------------------------------
 # Set directories
