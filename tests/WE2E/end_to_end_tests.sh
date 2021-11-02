@@ -90,7 +90,7 @@ echo "-- Load environment =>"  $cmd
 auto_file="auto_expts_list.txt"
 
 rm -rf ${auto_file}
-echo ${expts} > ${auto_file}
+echo -e ${expts} > ${auto_file}
 
 # Run the E2E Workflow tests
 ./run_WE2E_tests.sh tests_file=${auto_file} machine=${machine} account=${account}
