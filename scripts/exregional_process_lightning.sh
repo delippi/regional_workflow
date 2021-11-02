@@ -27,7 +27,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -119,9 +119,9 @@ esac
 #-----------------------------------------------------------------------
 #
 set -x
-START_DATE=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
-YYYYMMDDHH=$(date +%Y%m%d%H -d "${START_DATE}")
-JJJ=$(date +%j -d "${START_DATE}")
+START_DATE=$(echo "${CDATE}" | $SED 's/\([[:digit:]]\{2\}\)$/ \1/')
+YYYYMMDDHH=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE}")
+JJJ=$($DATE_UTIL +%j -d "${START_DATE}")
 
 YYYY=${YYYYMMDDHH:0:4}
 MM=${YYYYMMDDHH:4:2}
@@ -129,8 +129,8 @@ DD=${YYYYMMDDHH:6:2}
 HH=${YYYYMMDDHH:8:2}
 YYYYMMDD=${YYYYMMDDHH:0:8}
 
-YYJJJHH=$(date +"%y%j%H" -d "${START_DATE}")
-PREYYJJJHH=$(date +"%y%j%H" -d "${START_DATE} 1 hours ago")
+YYJJJHH=$($DATE_UTIL +"%y%j%H" -d "${START_DATE}")
+PREYYJJJHH=$($DATE_UTIL +"%y%j%H" -d "${START_DATE} 1 hours ago")
 
 #
 #-----------------------------------------------------------------------

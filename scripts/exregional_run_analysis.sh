@@ -27,7 +27,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -144,10 +144,10 @@ esac
 #
 #-----------------------------------------------------------------------
 #
-START_DATE=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
+START_DATE=$(echo "${CDATE}" | $SED 's/\([[:digit:]]\{2\}\)$/ \1/')
 
-YYYYMMDDHH=$(date +%Y%m%d%H -d "${START_DATE}")
-JJJ=$(date +%j -d "${START_DATE}")
+YYYYMMDDHH=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE}")
+JJJ=$($DATE_UTIL +%j -d "${START_DATE}")
 
 YYYY=${YYYYMMDDHH:0:4}
 MM=${YYYYMMDDHH:4:2}
@@ -158,8 +158,8 @@ YYYYMMDD=${YYYYMMDDHH:0:8}
 # YYYY-MM-DD_meso_uselist.txt and YYYYMMDD_rejects.txt: 
 # both contain past 7 day OmB averages till ~YYYYMMDD_23:59:59 UTC
 # So they are to be used by next day cycles
-MESO_USELIST_FN=$(date +%Y-%m-%d -d "${START_DATE} -1 day")_meso_uselist.txt 
-AIR_REJECT_FN=$(date +%Y%m%d -d "${START_DATE} -1 day")_rejects.txt
+MESO_USELIST_FN=$($DATE_UTIL +%Y-%m-%d -d "${START_DATE} -1 day")_meso_uselist.txt 
+AIR_REJECT_FN=$($DATE_UTIL +%Y%m%d -d "${START_DATE} -1 day")_rejects.txt
 #
 #-----------------------------------------------------------------------
 #
@@ -203,7 +203,7 @@ print_info_msg "$VERBOSE" "background type is is $BKTYPE"
 #
 #-----------------------------------------------------------------------
 
-stampcycle=$(date -d "${START_DATE}" +%s)
+stampcycle=$($DATE_UTIL -d "${START_DATE}" +%s)
 minHourDiff=100
 loops="009"    # or 009s for GFSv15
 ens_type="nc"  # or nemsio for GFSv15
@@ -219,10 +219,10 @@ case $MACHINE in
       availtimeyyyymmdd=$(echo ${timelist} | cut -d'/' -f9 | cut -c 10-17)
       availtimehh=$(echo ${timelist} | cut -d'/' -f10)
       availtime=${availtimeyyyymmdd}${availtimehh}
-      avail_time=$(echo "${availtime}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
-      avail_time=$(date -d "${avail_time}")
+      avail_time=$(echo "${availtime}" | $SED 's/\([[:digit:]]\{2\}\)$/ \1/')
+      avail_time=$($DATE_UTIL -d "${avail_time}")
 
-      stamp_avail=$(date -d "${avail_time} ${loop} hours" +%s)
+      stamp_avail=$($DATE_UTIL -d "${avail_time} ${loop} hours" +%s)
 
       hourDiff=$(echo "($stampcycle - $stamp_avail) / (60 * 60 )" | bc);
       if [[ ${stampcycle} -lt ${stamp_avail} ]]; then
@@ -252,14 +252,14 @@ case $MACHINE in
       availtimeyy=$(basename ${timelist} | cut -c 1-2)
       availtimeyyyy=20${availtimeyy}
       availtimejjj=$(basename ${timelist} | cut -c 3-5)
-      availtimemm=$(date -d "${availtimeyyyy}0101 +$(( 10#${availtimejjj} - 1 )) days" +%m)
-      availtimedd=$(date -d "${availtimeyyyy}0101 +$(( 10#${availtimejjj} - 1 )) days" +%d)
+      availtimemm=$($DATE_UTIL -d "${availtimeyyyy}0101 +$(( 10#${availtimejjj} - 1 )) days" +%m)
+      availtimedd=$($DATE_UTIL -d "${availtimeyyyy}0101 +$(( 10#${availtimejjj} - 1 )) days" +%d)
       availtimehh=$(basename ${timelist} | cut -c 6-7)
       availtime=${availtimeyyyy}${availtimemm}${availtimedd}${availtimehh}
-      avail_time=$(echo "${availtime}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
-      avail_time=$(date -d "${avail_time}")
+      avail_time=$(echo "${availtime}" | $SED 's/\([[:digit:]]\{2\}\)$/ \1/')
+      avail_time=$($DATE_UTIL -d "${avail_time}")
 
-      stamp_avail=$(date -d "${avail_time} ${loop} hours" +%s)
+      stamp_avail=$($DATE_UTIL -d "${avail_time} ${loop} hours" +%s)
 
       hourDiff=$(echo "($stampcycle - $stamp_avail) / (60 * 60 )" | bc);
       if [[ ${stampcycle} -lt ${stamp_avail} ]]; then
@@ -336,10 +336,10 @@ fi
 
 # update times in coupler.res to current cycle time
 cp_vrfy ${fixgriddir}/fv3_coupler.res          coupler.res
-sed -i "s/yyyy/${YYYY}/" coupler.res
-sed -i "s/mm/${MM}/"     coupler.res
-sed -i "s/dd/${DD}/"     coupler.res
-sed -i "s/hh/${HH}/"     coupler.res
+$SED -i "s/yyyy/${YYYY}/" coupler.res
+$SED -i "s/mm/${MM}/"     coupler.res
+$SED -i "s/dd/${DD}/"     coupler.res
+$SED -i "s/hh/${HH}/"     coupler.res
 
 #
 #-----------------------------------------------------------------------

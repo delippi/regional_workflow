@@ -35,7 +35,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -130,11 +130,11 @@ case $MACHINE in
   "JET")
     ulimit -s unlimited
     ulimit -a
-    export APRUN="time"
+    APRUN="time"
     ;;
 
   "ODIN")
-    export APRUN="srun -n 1"
+    APRUN="srun -n 1"
     ulimit -s unlimited
     ulimit -a
     ;;
@@ -144,14 +144,23 @@ case $MACHINE in
     ;;
 
   "STAMPEDE")
-    export APRUN="time"
+    APRUN="time"
+    ;;
+
+  "MACOS")
+    APRUN=time
+    ;;
+
+  "LINUX")
+    APRUN=time
+    ulimit -s unlimited
+    ulimit -a
     ;;
 
   *)
     print_err_msg_exit "\
 Run command has not been specified for this machine:
   MACHINE = \"$MACHINE\"
-  APRUN = \"$APRUN\""
     ;;
 
 esac
@@ -226,7 +235,8 @@ cp_vrfy ${TOPO_DIR}/gmted2010.30sec.int fort.235
 mosaic_fn="${CRES}${DOT_OR_USCORE}mosaic.halo${NHW}.nc"
 mosaic_fp="$FIXLAM/${mosaic_fn}"
 
-grid_fn=$( get_charvar_from_netcdf "${mosaic_fp}" "gridfiles" )
+grid_fn=$( get_charvar_from_netcdf "${mosaic_fp}" "gridfiles" ) || print_err_msg_exit "\
+  get_charvar_from_netcdf function failed."
 grid_fp="${FIXLAM}/${grid_fn}"
 #
 #-----------------------------------------------------------------------
@@ -284,7 +294,7 @@ cat "${input_redirect_fn}"
 #
 #-----------------------------------------------------------------------
 #
-print_info_msg "$VERBOSE" "
+print_info_msg "$VERBOSE" " \
 Starting orography file generation..."
 
 $APRUN "${exec_fp}" < "${input_redirect_fn}" || \

@@ -27,7 +27,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -79,10 +79,10 @@ print_input_args valid_args
 #
 #-----------------------------------------------------------------------
 #
-START_DATE=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
+START_DATE=$(echo "${CDATE}" | $SED 's/\([[:digit:]]\{2\}\)$/ \1/')
 
-YYYYMMDDHH=$(date +%Y%m%d%H -d "${START_DATE}")
-JJJ=$(date +%j -d "${START_DATE}")
+YYYYMMDDHH=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE}")
+JJJ=$($DATE_UTIL +%j -d "${START_DATE}")
 
 YYYY=${YYYYMMDDHH:0:4}
 MM=${YYYYMMDDHH:4:2}
@@ -123,7 +123,7 @@ while [[ $imem -le ${NUM_ENS_MEMBERS} ]];
 #
   fg_restart_dirname=fcst_fv3lam
 
-  YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${DA_CYCLE_INTERV} hours ago" )
+  YYYYMMDDHHmInterv=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE} ${DA_CYCLE_INTERV} hours ago" )
   bkpath=${fg_root}/${YYYYMMDDHHmInterv}/mem${ensmem}/${fg_restart_dirname}/RESTART  # cycling, use background from RESTART
 
 #   the restart file from FV3 has a name like: ${YYYYMMDD}.${HH}0000.fv_core.res.tile1.nc

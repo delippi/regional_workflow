@@ -90,14 +90,14 @@ fi
 # If START_TIME is not defined, use the current time
 if [ ! "${START_TIME}" ]; then
   ${ECHO} "START_TIME not defined - get from date"
-  START_TIME=$( date +"%Y%m%d %H" )
-  INIT_HOUR=$( date +"%H" -d "${START_TIME}" )
-  START_TIME=$( date +"%Y%m%d%H" -d "${START_TIME}" )
+  START_TIME=$($DATE_UTIL +"%Y%m%d %H" )
+  INIT_HOUR=$($DATE_UTIL +"%H" -d "${START_TIME}" )
+  START_TIME=$($DATE_UTIL +"%Y%m%d%H" -d "${START_TIME}" )
 else
   ${ECHO} "START_TIME defined and is ${START_TIME}"
-  START_TIME=$( date +"%Y%m%d %H" -d "${START_TIME%??} ${START_TIME#????????}" )
-  INIT_HOUR=$( date +"%H" -d "${START_TIME}" )
-  START_TIME=$( date +"%Y%m%d%H" -d "${START_TIME}" )
+  START_TIME=$($DATE_UTIL +"%Y%m%d %H" -d "${START_TIME%??} ${START_TIME#????????}" )
+  INIT_HOUR=$($DATE_UTIL +"%H" -d "${START_TIME}" )
+  START_TIME=$($DATE_UTIL +"%Y%m%d%H" -d "${START_TIME}" )
 fi
 
 # Print out times

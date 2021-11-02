@@ -29,12 +29,12 @@ fi
 # If START_TIME is not defined, use the current time
 if [ ! "${START_TIME}" ]; then
   ${ECHO} "START_TIME not defined - get from date"
-  START_TIME=$( date +"%Y%m%d %H" )
-  START_TIME=$( date +"%Y%m%d%H" -d "${START_TIME}" )
+  START_TIME=$($DATE_UTIL +"%Y%m%d %H" )
+  START_TIME=$($DATE_UTIL +"%Y%m%d%H" -d "${START_TIME}" )
 else
   ${ECHO} "START_TIME defined and is ${START_TIME}"
-  START_TIME=$( date +"%Y%m%d %H" -d "${START_TIME%??} ${START_TIME#????????}" )
-  START_TIME=$( date +"%Y%m%d%H" -d "${START_TIME}" )
+  START_TIME=$($DATE_UTIL +"%Y%m%d %H" -d "${START_TIME%??} ${START_TIME#????????}" )
+  START_TIME=$($DATE_UTIL +"%Y%m%d%H" -d "${START_TIME}" )
 fi
 
 FCST_TIME=$(printf "%02d" $(( 10#$FCST_TIME )))

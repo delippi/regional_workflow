@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 #-----------------------------------------------------------------------
 #
@@ -23,7 +24,7 @@ function setup() {
 #
 #-----------------------------------------------------------------------
 #
-local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+local scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 local scrfunc_fn=$( basename "${scrfunc_fp}" )
 local scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -380,7 +381,7 @@ done
 #
 #-----------------------------------------------------------------------
 #
-MACHINE=$( printf "%s" "$MACHINE" | sed -e 's/\(.*\)/\U\1/' )
+MACHINE=$( printf "%s" "$MACHINE" | $SED -e 's/\(.*\)/\U\1/' )
 check_var_valid_value "MACHINE" "valid_vals_MACHINE"
 #
 #-----------------------------------------------------------------------
@@ -394,7 +395,8 @@ check_var_valid_value "MACHINE" "valid_vals_MACHINE"
 case $MACHINE in
 
   "WCOSS_CRAY")
-    NCORES_PER_NODE="24"
+    WORKFLOW_MANAGER="rocoto"
+    NCORES_PER_NODE=${NCORES_PER_NODE:-"24"}
     SCHED="lsfcray"
     QUEUE_DEFAULT=${QUEUE_DEFAULT:-"dev"}
     QUEUE_HPSS=${QUEUE_HPSS:-"dev_transfer"}
@@ -402,7 +404,8 @@ case $MACHINE in
     ;;
 
   "WCOSS_DELL_P3")
-    NCORES_PER_NODE=24
+    WORKFLOW_MANAGER="rocoto"
+    NCORES_PER_NODE=${NCORES_PER_NODE:-24}
     SCHED="lsf"
     QUEUE_DEFAULT=${QUEUE_DEFAULT:-"dev"}
     QUEUE_HPSS=${QUEUE_HPSS:-"dev_transfer"}
@@ -410,7 +413,8 @@ case $MACHINE in
     ;;
 
   "HERA")
-    NCORES_PER_NODE=40
+    WORKFLOW_MANAGER="rocoto"
+    NCORES_PER_NODE=${NCORES_PER_NODE:-40}
     SCHED="${SCHED:-slurm}"
     PARTITION_DEFAULT=${PARTITION_DEFAULT:-"hera"}
     QUEUE_DEFAULT=${QUEUE_DEFAULT:-"batch"}
@@ -421,7 +425,8 @@ case $MACHINE in
     ;;
 
   "ORION")
-    NCORES_PER_NODE=40
+    WORKFLOW_MANAGER="rocoto"
+    NCORES_PER_NODE=${NCORES_PER_NODE:-40}
     SCHED="${SCHED:-slurm}"
     PARTITION_DEFAULT=${PARTITION_DEFAULT:-"orion"}
     QUEUE_DEFAULT=${QUEUE_DEFAULT:-"batch"}
@@ -432,6 +437,7 @@ case $MACHINE in
     ;;
 
   "JET")
+    WORKFLOW_MANAGER="rocoto"
     NCORES_PER_NODE=${NCORES_PER_NODE}
     SCHED="${SCHED:-slurm}"
     PARTITION_DEFAULT=${PARTITION_DEFAULT:-"sjet,vjet,kjet,xjet"}
@@ -449,7 +455,8 @@ case $MACHINE in
     ;;
 
   "ODIN")
-    NCORES_PER_NODE=24
+    WORKFLOW_MANAGER="rocoto"
+    NCORES_PER_NODE=${NCORES_PER_NODE:-24}
     SCHED="${SCHED:-slurm}"
     PARTITION_DEFAULT=${PARTITION_DEFAULT:-"workq"}
     QUEUE_DEFAULT=${QUEUE_DEFAULT:-"workq"}
@@ -460,7 +467,8 @@ case $MACHINE in
     ;;
 
   "CHEYENNE")
-    NCORES_PER_NODE=36
+    WORKFLOW_MANAGER="rocoto"
+    NCORES_PER_NODE=${NCORES_PER_NODE:-36}
     SCHED="${SCHED:-pbspro}"
     QUEUE_DEFAULT=${QUEUE_DEFAULT:-"regular"}
     QUEUE_HPSS=${QUEUE_HPSS:-"regular"}
@@ -468,7 +476,8 @@ case $MACHINE in
     ;;
 
   "STAMPEDE")
-    NCORES_PER_NODE=68
+    WORKFLOW_MANAGER="rocoto"
+    NCORES_PER_NODE=${NCORES_PER_NODE:-68}
     SCHED="slurm"
     PARTITION_DEFAULT=${PARTITION_DEFAULT:-"normal"}
     QUEUE_DEFAULT=${QUEUE_DEFAULT:-"normal"}
@@ -478,6 +487,23 @@ case $MACHINE in
     QUEUE_FCST=${QUEUE_FCST:-"normal"}
     ;;
 
+  "MACOS")
+    WORKFLOW_MANAGER="none"
+    SCHED="none"
+    ;;
+
+  "LINUX")
+    WORKFLOW_MANAGER=${WORKFLOW_MANAGER:-"none"}
+    SCHED=${SCHED:-"none"}
+    ;;
+
+  *)
+    NCORES_PER_NODE="2" # Need some arbitrary default value to avoid division by zero errors
+
+    print_info_msg "\
+      You are running on an unknown platform! The default value of
+    NCORES_PER_NODE = ${NCORES_PER_NODE} will be used unless you set
+    this variable in your configuration file."
 esac
 #
 #-----------------------------------------------------------------------
@@ -491,15 +517,18 @@ check_var_valid_value "SCHED" "valid_vals_SCHED"
 #
 #-----------------------------------------------------------------------
 #
-# Verify that the ACCOUNT variable is not empty.  If it is, print out an
-# error message and exit.
+# If we are using a workflow manager check that the ACCOUNT variable is
+# not empty.
 #
 #-----------------------------------------------------------------------
 #
-if [ -z "$ACCOUNT" ]; then
-  print_err_msg_exit "\
-The variable ACCOUNT cannot be empty:
-  ACCOUNT = \"$ACCOUNT\""
+if [ "$WORKFLOW_MANAGER" != "none" ]; then
+  if [ -z "$ACCOUNT" ]; then
+    print_err_msg_exit "\
+The variable ACCOUNT cannot be empty if you are using a workflow manager:
+  ACCOUNT = \"$ACCOUNT\"
+  WORKFLOW_MANAGER = \"$WORKFLOW_MANAGER\""
+  fi
 fi
 #
 #-----------------------------------------------------------------------
@@ -568,7 +597,7 @@ check_var_valid_value \
 #-----------------------------------------------------------------------
 #
 DATE_OR_NULL=$( printf "%s" "${DATE_FIRST_CYCL}" | \
-                sed -n -r -e "s/^([0-9]{8})$/\1/p" )
+                $SED -n -r -e "s/^([0-9]{8})$/\1/p" )
 if [ -z "${DATE_OR_NULL}" ]; then
   print_err_msg_exit "\
 DATE_FIRST_CYCL must be a string consisting of exactly 8 digits of the 
@@ -578,7 +607,7 @@ month, and DD is the 2-digit day-of-month.
 fi
 
 DATE_OR_NULL=$( printf "%s" "${DATE_LAST_CYCL}" | \
-                sed -n -r -e "s/^([0-9]{8})$/\1/p" )
+                $SED -n -r -e "s/^([0-9]{8})$/\1/p" )
 if [ -z "${DATE_OR_NULL}" ]; then
   print_err_msg_exit "\
 DATE_LAST_CYCL must be a string consisting of exactly 8 digits of the 
@@ -600,7 +629,7 @@ CYCL_HRS_str="( $CYCL_HRS_str)"
 i=0
 for CYCL in "${CYCL_HRS[@]}"; do
 
-  CYCL_OR_NULL=$( printf "%s" "$CYCL" | sed -n -r -e "s/^([0-9]{2})$/\1/p" )
+  CYCL_OR_NULL=$( printf "%s" "$CYCL" | $SED -n -r -e "s/^([0-9]{2})$/\1/p" )
 
   if [ -z "${CYCL_OR_NULL}" ]; then
     print_err_msg_exit "\
@@ -769,7 +798,8 @@ case $MACHINE in
     ;;
 
   *)
-    print_err_msg_exit "\
+    if [ -z "$FIXgsm" -o -z "$TOPO_DIR" -o -z "$SFC_CLIMO_INPUT_DIR" ]; then 
+      print_err_msg_exit "\
 One or more fix file directories have not been specified for this machine:
   MACHINE = \"$MACHINE\"
   FIXgsm = \"${FIXgsm:-\"\"}
@@ -777,6 +807,7 @@ One or more fix file directories have not been specified for this machine:
   SFC_CLIMO_INPUT_DIR = \"${SFC_CLIMO_INPUT_DIR:-\"\"}
   FIXLAM_NCO_BASEDIR = \"${FIXLAM_NCO_BASEDIR:-\"\"}
 You can specify the missing location(s) in config.sh"
+    fi
     ;;
 
 esac
@@ -793,7 +824,7 @@ esac
 #
 #-----------------------------------------------------------------------
 #
-mng_extrns_cfg_fn=$( readlink -f "${SR_WX_APP_TOP_DIR}/Externals.cfg" )
+mng_extrns_cfg_fn=$( $READLINK -f "${SR_WX_APP_TOP_DIR}/Externals.cfg" )
 property_name="local_path"
 #
 # Get the base directory of the FV3 forecast model code.
@@ -1164,7 +1195,7 @@ fi
 if [ "${EXPT_BASEDIR:0:1}" != "/" ]; then
   EXPT_BASEDIR="${SR_WX_APP_TOP_DIR}/../expt_dirs/${EXPT_BASEDIR}"
 fi
-EXPT_BASEDIR="$( readlink -m ${EXPT_BASEDIR} )"
+EXPT_BASEDIR="$( $READLINK -m ${EXPT_BASEDIR} )"
 mkdir_vrfy -p "${EXPT_BASEDIR}"
 #
 #-----------------------------------------------------------------------
@@ -1939,12 +1970,13 @@ fi
 #-----------------------------------------------------------------------
 #
 # Create a new experiment directory.  Note that at this point we are 
-# guaranteed that there is no preexisting experiment directory.
+# guaranteed that there is no preexisting experiment directory. For
+# platforms with no workflow manager, we need to create LOGDIR as well,
+# since it won't be created later at runtime.
 #
 #-----------------------------------------------------------------------
 #
 mkdir_vrfy -p "$EXPTDIR"
-
 
 #
 #-----------------------------------------------------------------------
@@ -2583,7 +2615,7 @@ ADDNL_OUTPUT_GRIDS=( $(printf "\"%s\" " "${ADDNL_OUTPUT_GRIDS[@]}" ))
 GLOBAL_VAR_DEFNS_FP="${GLOBAL_VAR_DEFNS_FP}"
 # Try this at some point instead of hard-coding it as above; it's a more
 # flexible approach (if it works).
-#GLOBAL_VAR_DEFNS_FP=$( readlink -f "${BASH_SOURCE[0]}" )
+#GLOBAL_VAR_DEFNS_FP=$( $READLINK -f "${BASH_SOURCE[0]}" )
 
 DATA_TABLE_TMPL_FN="${DATA_TABLE_TMPL_FN}"
 DIAG_TABLE_TMPL_FN="${DIAG_TABLE_TMPL_FN}"
@@ -2720,6 +2752,15 @@ fi
 #
 #-----------------------------------------------------------------------
 #
+# Because RUN_CMD_FCST can include PE_MEMBER01 (and theoretically other
+# variables calculated in this script), delete the first occurrence of it
+# in the var_defns file, and write it again at the end.
+#
+#-----------------------------------------------------------------------
+$SED -i '/^RUN_CMD_FCST=/d' $GLOBAL_VAR_DEFNS_FP
+#
+#-----------------------------------------------------------------------
+#
 # Continue appending variable defintions to the variable definitions 
 # file.
 #
@@ -2809,6 +2850,7 @@ FVCOM_FILE="${FVCOM_FILE}"
 #
 NCORES_PER_NODE="${NCORES_PER_NODE}"
 PE_MEMBER01="${PE_MEMBER01}"
+RUN_CMD_FCST="${RUN_CMD_FCST}"
 EOM
 } || print_err_msg_exit "\
 Heredoc (cat) command to append new variable definitions to variable 

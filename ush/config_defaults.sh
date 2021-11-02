@@ -41,7 +41,12 @@ RUN_ENVIR="nco"
 # Set machine and queue parameters.  Definitions:
 #
 # MACHINE:
-# Machine on which the workflow will run.
+# Machine on which the workflow will run. If you are NOT on a named,
+# supported platform, and you want to use the Rocoto workflow manager,
+# you will need set MACHINE="linux" and WORKFLOW_MANAGER="rocoto". This
+# combination will assume a Slurm batch manager when generating the XML.
+# Please see ush/valid_param_vals.sh for a full list of supported
+# platforms.
 #
 # ACCOUNT:
 # The account under which to submit jobs to the queue.
@@ -49,6 +54,31 @@ RUN_ENVIR="nco"
 # SERVICE_ACCOUNT:
 # The account under which to submit non-reservation jobs to the queue.
 # Defaults to ACCOUNT if not set.
+#
+# WORKFLOW_MANAGER:
+# The workflow manager to use (e.g. rocoto). This is set to "none" by
+# default, but if the machine name is set to a platform that supports
+# rocoto, this will be overwritten and set to "rocoto". If set
+# explicitly to rocoto along with the use of the MACHINE=linux target,
+# the configuration layer assumes a Slurm batch manager when generating
+# the XML. Valid options: "rocoto" or "none"
+#
+# NCORES_PER_NODE:
+# The number of cores available per node on the compute platform. Set
+# for supported platforms in setup.sh, but is now also configurable for
+# all platforms.
+#
+# LMOD_PATH:
+# Path to the LMOD sh file on your Linux system. Is set automatically
+# for supported machines.
+#
+# BUILD_ENV_FN:
+# Name of alternative build environment file to use if using an
+# unsupported platform. Is set automatically for supported machines.
+#
+# WFLOW_ENV_FN:
+# Name of alternative workflow environment file to use if using an
+# unsupported platform. Is set automatically for supported machines.
 #
 # SCHED:
 # The job scheduler to use (e.g. slurm).  Set this to an empty string in
@@ -125,6 +155,11 @@ RUN_ENVIR="nco"
 MACHINE="BIG_COMPUTER"
 ACCOUNT="project_name"
 SERVICE_ACCOUNT=""
+WORKFLOW_MANAGER="none"
+NCORES_PER_NODE=""
+LMOD_PATH=""
+BUILD_ENV_FN=""
+WFLOW_ENV_FN=""
 RESERVATION=""
 SCHED=""
 PARTITION_DEFAULT=""
@@ -139,6 +174,30 @@ PARTITION_ANALYSIS=""
 QUEUE_ANALYSIS=""
 PARTITION_WGRIB2=""
 QUEUE_WGRIB2=""
+#
+#-----------------------------------------------------------------------
+#
+# Set run commands for platforms without a workflow manager. These values
+# will be ignored unless WORKFLOW_MANAGER="none".  Definitions:
+#
+# RUN_CMD_UTILS:
+# The run command for pre-processing utilities (shave, orog, sfc_climo_gen, etc.)
+# Can be left blank for smaller domains, in which case the executables will run
+# without MPI.
+#
+# RUN_CMD_FCST:
+# The run command for the model forecast step. This will be appended to the end
+# of the variable definitions file, so it can reference other variables.
+#
+# RUN_CMD_POST:
+# The run command for post-processing (UPP). Can be left blank for smaller
+# domains, in which case UPP will run without MPI.
+#
+#-----------------------------------------------------------------------
+#
+RUN_CMD_UTILS="mpirun -np 1"
+RUN_CMD_FCST="mpirun -np \${PE_MEMBER01}"
+RUN_CMD_POST="mpirun -np 1"
 #
 #-----------------------------------------------------------------------
 #

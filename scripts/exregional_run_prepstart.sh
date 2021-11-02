@@ -27,7 +27,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -81,10 +81,10 @@ print_input_args valid_args
 #
 #-----------------------------------------------------------------------
 #
-START_DATE=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
+START_DATE=$(echo "${CDATE}" | $SED 's/\([[:digit:]]\{2\}\)$/ \1/')
 
-YYYYMMDDHH=$(date +%Y%m%d%H -d "${START_DATE}")
-JJJ=$(date +%j -d "${START_DATE}")
+YYYYMMDDHH=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE}")
+JJJ=$($DATE_UTIL +%j -d "${START_DATE}")
 
 YYYY=${YYYYMMDDHH:0:4}
 MM=${YYYYMMDDHH:4:2}
@@ -92,16 +92,16 @@ DD=${YYYYMMDDHH:6:2}
 HH=${YYYYMMDDHH:8:2}
 YYYYMMDD=${YYYYMMDDHH:0:8}
 
-current_time=$(date "+%T")
+current_time=$($DATE_UTIL "+%T")
 
-YYYYMMDDm1=$(date +%Y%m%d -d "${START_DATE} 1 days ago")
-YYYYMMDDm2=$(date +%Y%m%d -d "${START_DATE} 2 days ago")
+YYYYMMDDm1=$($DATE_UTIL +%Y%m%d -d "${START_DATE} 1 days ago")
+YYYYMMDDm2=$($DATE_UTIL +%Y%m%d -d "${START_DATE} 2 days ago")
 #
 #-----------------------------------------------------------------------
 #
 # Compute date & time components for the SST analysis time relative to current analysis time
-YYJJJ00000000=`date +"%y%j00000000" -d "${START_DATE} 1 day ago"`
-YYJJJ1200=`date +"%y%j1200" -d "${START_DATE} 1 day ago"`
+YYJJJ00000000=`$DATE_UTIL +"%y%j00000000" -d "${START_DATE} 1 day ago"`
+YYJJJ1200=`$DATE_UTIL +"%y%j1200" -d "${START_DATE} 1 day ago"`
 #
 #-----------------------------------------------------------------------
 #
@@ -193,7 +193,7 @@ else
      fg_restart_dirname=fcst_fv3lam
   fi
 
-  YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${DA_CYCLE_INTERV} hours ago" )
+  YYYYMMDDHHmInterv=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE} ${DA_CYCLE_INTERV} hours ago" )
   bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${fg_restart_dirname}/RESTART  # cycling, use background from RESTART
 
 #   let us figure out which backgound is available
@@ -211,7 +211,7 @@ else
       break
     else
       n=$((n + ${DA_CYCLE_INTERV}))
-      YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${n} hours ago" )
+      YYYYMMDDHHmInterv=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE} ${n} hours ago" )
       bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${fg_restart_dirname}/RESTART  # cycling, use background from RESTART
       print_info_msg "$VERBOSE" "Trying this path: ${bkpath}"
     fi
@@ -222,7 +222,7 @@ else
   if [ ! -r "${checkfile}" ] && [ ${BKTYPE} -eq 2 ]; then
      print_info_msg "$VERBOSE" "cannot find background from spin-up cycle, try product cycle"
      fg_restart_dirname=fcst_fv3lam
-     YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${DA_CYCLE_INTERV} hours ago" )
+     YYYYMMDDHHmInterv=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE} ${DA_CYCLE_INTERV} hours ago" )
      bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${fg_restart_dirname}/RESTART  # cycling, use background from RESTART
 #
      restart_prefix="${YYYYMMDD}.${HH}0000."
@@ -234,7 +234,7 @@ else
          break
        else
          n=$((n + ${DA_CYCLE_INTERV}))
-         YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${n} hours ago" )
+         YYYYMMDDHHmInterv=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE} ${n} hours ago" )
          bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${fg_restart_dirname}/RESTART  # cycling, use background from RESTART
          print_info_msg "$VERBOSE" "Trying this path: ${bkpath}"
        fi
@@ -316,10 +316,10 @@ if [ ${SFC_CYC} -eq 1 ] || [ ${SFC_CYC} -eq 2 ] ; then  # cycle surface fields
       for ndayinhour in 00 24 48
       do 
         if [ "${bkpath_find}" == "missing" ]; then
-          restart_prefix=$( date +%Y%m%d.%H0000. -d "${START_DATE} ${ndayinhour} hours ago" )
+          restart_prefix=$($DATE_UTIL +%Y%m%d.%H0000. -d "${START_DATE} ${ndayinhour} hours ago" )
 
           offset_hours=$(( ${DA_CYCLE_INTERV} + ${ndayinhour} ))
-          YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${offset_hours} hours ago" )
+          YYYYMMDDHHmInterv=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE} ${offset_hours} hours ago" )
           bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${surface_file_dir_name}/RESTART  
 
           n=${DA_CYCLE_INTERV}
@@ -333,7 +333,7 @@ if [ ${SFC_CYC} -eq 1 ] || [ ${SFC_CYC} -eq 2 ] ; then  # cycle surface fields
  
              n=$((n + ${DA_CYCLE_INTERV}))
              offset_hours=$(( ${n} + ${ndayinhour} ))
-             YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${offset_hours} hours ago" )
+             YYYYMMDDHHmInterv=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE} ${offset_hours} hours ago" )
              bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${surface_file_dir_name}/RESTART  # cycling, use background from RESTART
              print_info_msg "$VERBOSE" "Trying this path: ${bkpath}"
           done
@@ -410,9 +410,9 @@ fi
 if [[ "${NET}" = "RTMA"* ]]; then
     #find a bdry file last modified before current cycle time and size > 100M 
     #to make sure it exists and was written out completely. 
-    TIME1HAGO=$(date -d "${START_DATE} 58 minute" +"%Y-%m-%d %H:%M:%S")
+    TIME1HAGO=$($DATE_UTIL -d "${START_DATE} 58 minute" +"%Y-%m-%d %H:%M:%S")
     bdryfile1=${lbcs_root}/$(cd $lbcs_root;find . -name "gfs_bndy.tile7.001.nc" ! -newermt "$TIME1HAGO" -size +100M | xargs ls -1rt |tail -n 1)
-    bdryfile0=$(echo $bdryfile1 | sed -e "s/gfs_bndy.tile7.001.nc/gfs_bndy.tile7.000.nc/")
+    bdryfile0=$(echo $bdryfile1 | $SED -e "s/gfs_bndy.tile7.001.nc/gfs_bndy.tile7.000.nc/")
     ln_vrfy -snf ${bdryfile0} .
     ln_vrfy -snf ${bdryfile1} .
 
@@ -434,7 +434,7 @@ else
   bndy_prefix=gfs_bndy.tile7
   n=${EXTRN_MDL_LBCS_SEARCH_OFFSET_HRS}
   end_search_hr=$(( 12 + ${EXTRN_MDL_LBCS_SEARCH_OFFSET_HRS} ))
-  YYYYMMDDHHmInterv=$(date +%Y%m%d%H -d "${START_DATE} ${n} hours ago")
+  YYYYMMDDHHmInterv=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE} ${n} hours ago")
   lbcs_path=${lbcs_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/lbcs
   while [[ $n -le ${end_search_hr} ]] ; do
     last_bdy_time=$(( n + ${FCST_LEN_HRS_thiscycle} ))
@@ -445,7 +445,7 @@ else
       break
     else
       n=$((n + 1))
-      YYYYMMDDHHmInterv=$(date +%Y%m%d%H -d "${START_DATE} ${n} hours ago")
+      YYYYMMDDHHmInterv=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE} ${n} hours ago")
       lbcs_path=${lbcs_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/lbcs
     fi
   done

@@ -38,7 +38,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -146,11 +146,19 @@ case $MACHINE in
     ulimit -a
     ;;
 
+  "MACOS")
+    APRUN=time
+    ;;
+
+  "LINUX")
+    APRUN=time
+    ;;
+
+
   *)
     print_err_msg_exit "\
 Run command has not been specified for this machine:
   MACHINE = \"$MACHINE\"
-  APRUN = \"$APRUN\""
     ;;
 
 esac
@@ -431,6 +439,14 @@ Call to executable (exec_fp) that calculates the regional grid's global
 uniform cubed-sphere grid equivalent resolution returned with nonzero exit
 code:
   exec_fp = \"${exec_fp}\""
+
+# Make sure 'ncdump' is available before we try to use it
+if ! command -v ncdump &> /dev/null
+then
+  print_err_msg_exit "\
+The utility 'ncdump' was not found in the environment. Be sure to add the
+netCDF 'bin/' directory to your PATH."
+fi
 
 # Make the following (reading of res_equiv) a function in another file
 # so that it can be used both here and in the exregional_make_orog.sh
