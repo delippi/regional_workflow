@@ -27,7 +27,7 @@ Aborting.
 }
 
   if [[ $(uname -s) == Darwin ]]; then
-    export READLINK=g$READLINK
+    export READLINK=greadlink
     command -v $READLINK >/dev/null 2>&1 || darwinerror $READLINK
     export SED=gsed
     command -v $SED >/dev/null 2>&1 || darwinerror $SED
@@ -36,7 +36,7 @@ Aborting.
     export LN_UTIL=gln
     command -v $LN_UTIL >/dev/null 2>&1 || darwinerror $LN_UTIL
   else
-    export READLINK=$READLINK
+    export READLINK=readlink
     export SED=sed
     export DATE_UTIL=date
     export LN_UTIL=ln
