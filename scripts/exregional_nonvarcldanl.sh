@@ -27,7 +27,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -115,6 +115,12 @@ case $MACHINE in
   ulimit -a
   APRUN="srun -n 1"
   ;;
+
+"LINUX")
+  ulimit -s unlimited
+  ulimit -a
+  APRUN=${RUN_COMMAND_DA}
+  ;;
 #
 esac
 #
@@ -126,9 +132,9 @@ esac
 #-----------------------------------------------------------------------
 #
 set -x
-START_DATE=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
-YYYYMMDDHH=$(date +%Y%m%d%H -d "${START_DATE}")
-JJJ=$(date +%j -d "${START_DATE}")
+START_DATE=$(echo "${CDATE}" | $SED 's/\([[:digit:]]\{2\}\)$/ \1/')
+YYYYMMDDHH=$($DATE_UTIL +%Y%m%d%H -d "${START_DATE}")
+JJJ=$($DATE_UTIL +%j -d "${START_DATE}")
 
 YYYY=${YYYYMMDDHH:0:4}
 MM=${YYYYMMDDHH:4:2}

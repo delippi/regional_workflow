@@ -2,9 +2,9 @@
 
 module load hpss
 
-day=`date -u "+%d" -d "-1 day"`
-month=`date -u "+%m" -d "-1 day"`
-year=`date -u "+%Y" -d "-1 day"`
+day=`$DATE_UTIL -u "+%d" -d "-1 day"`
+month=`$DATE_UTIL -u "+%m" -d "-1 day"`
+year=`$DATE_UTIL -u "+%Y" -d "-1 day"`
 
 . ${GLOBAL_VAR_DEFNS_FP}
 
@@ -46,7 +46,7 @@ fi
 
 rmdir $COMOUT_BASEDIR/stage
 
-dateval=`date`
+dateval=`$DATE_UTIL`
 echo "Completed archive at "$dateval
 exit 0
 

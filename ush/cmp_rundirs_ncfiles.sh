@@ -75,8 +75,8 @@ function cmp_ncfiles_one_dir() {
 #
 #set -x
 
-rundir1="$( readlink -f $1 )"
-rundir2="$( readlink -f $2 )"
+rundir1="$( $READLINK -f $1 )"
+rundir2="$( $READLINK -f $2 )"
 
 printf "\n"
 printf "%s\n" "rundir1 = \"$rundir1\""

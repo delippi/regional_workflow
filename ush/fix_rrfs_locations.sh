@@ -29,6 +29,9 @@ elif [[ -d /sw/gaea ]] ; then
 elif [[ -d /work ]]; then
     PLATFORM=orion
     FIX_RRFS_LOCATION="/work/noaa/rtrr/FIX_RRFS"
+elif [[ -d /lustre ]]; then
+    PLATFORM=aws
+    FIX_RRFS_LOCATION="/lustre/FIX_RRFS"
 else
     PLATFORM=unknow
     FIX_RRFS_LOCATION="/this/is/an/unknow/platform"

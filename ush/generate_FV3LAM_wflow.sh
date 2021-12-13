@@ -19,7 +19,11 @@ function generate_FV3LAM_wflow() {
 #
 #-----------------------------------------------------------------------
 #
-local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+if [[ $(uname -s) == Darwin ]]; then
+    local scrfunc_fp=$( greadlink -f "${BASH_SOURCE[0]}" )
+  else
+    local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+fi
 local scrfunc_fn=$( basename "${scrfunc_fp}" )
 local scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -420,23 +424,24 @@ $settings"
 # script to generate the experiment's actual XML file from this template
 # file.
 #
-template_xml_fp="${TEMPLATE_DIR}/${WFLOW_XML_FN}"
-$USHDIR/fill_jinja_template.py -q \
-                               -u "${settings}" \
-                               -t ${template_xml_fp} \
-                               -o ${WFLOW_XML_FP} || \
-  print_err_msg_exit "\
-Call to python script fill_jinja_template.py to create a rocoto workflow
-XML file from a template file failed.  Parameters passed to this script
-are:
-  Full path to template rocoto XML file:
-    template_xml_fp = \"${template_xml_fp}\"
-  Full path to output rocoto XML file:
-    WFLOW_XML_FP = \"${WFLOW_XML_FP}\"
-  Namelist settings specified on command line:
-    settings =
-$settings"
-
+if [ "${WORKFLOW_MANAGER}" = "rocoto" ]; then
+  template_xml_fp="${TEMPLATE_DIR}/${WFLOW_XML_FN}"
+  $USHDIR/fill_jinja_template.py -q \
+                                 -u "${settings}" \
+                                 -t ${template_xml_fp} \
+                                 -o ${WFLOW_XML_FP} || \
+    print_err_msg_exit "\
+  Call to python script fill_jinja_template.py to create a rocoto workflow
+  XML file from a template file failed.  Parameters passed to this script
+  are:
+    Full path to template rocoto XML file:
+      template_xml_fp = \"${template_xml_fp}\"
+    Full path to output rocoto XML file:
+      WFLOW_XML_FP = \"${WFLOW_XML_FP}\"
+    Namelist settings specified on command line:
+      settings =
+  $settings"
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -464,7 +469,7 @@ if [ "${USE_CRON_TO_RELAUNCH}" = "TRUE" ]; then
 #
 # Make a backup copy of the user's crontab file and save it in a file.
 #
-  time_stamp=$( date "+%F_%T" )
+  time_stamp=$( $DATE_UTIL "+%F_%T" )
   crontab_backup_fp="$EXPTDIR/crontab.bak.${time_stamp}"
   print_info_msg "
 Copying contents of user cron table to backup file:
@@ -477,7 +482,7 @@ Copying contents of user cron table to backup file:
 # CRONTAB_LINE with backslashes.  Do this next.
 #
   crontab_line_esc_astr=$( printf "%s" "${CRONTAB_LINE}" | \
-                           sed -r -e "s%[*]%\\\\*%g" )
+                           $SED -r -e "s%[*]%\\\\*%g" )
 #
 # In the grep command below, the "^" at the beginning of the string be-
 # ing passed to grep is a start-of-line anchor while the "$" at the end
@@ -532,7 +537,7 @@ if [ "${RUN_ENVIR}" = "nco" ]; then
 # Resolve the target directory that the FIXgsi symlink points to
     ln_vrfy -fsn "$FIX_GSI" "$FIXgsi"
 
-    path_resolved=$( readlink -m "$FIXgsi" )
+    path_resolved=$( $READLINK -m "$FIXgsi" )
     if [ ! -d "${path_resolved}" ]; then
       print_err_msg_exit "\
     Missing link to FIXgsi
@@ -547,7 +552,7 @@ if [ "${RUN_ENVIR}" = "nco" ]; then
 # Resolve the target directory that the FIXcrtm symlink points to
     ln_vrfy -fsn "$FIX_CRTM" "$FIXcrtm"
 
-    path_resolved=$( readlink -m "$FIXcrtm" )
+    path_resolved=$( $READLINK -m "$FIXcrtm" )
     if [ ! -d "${path_resolved}" ]; then
       print_err_msg_exit "\
     Missing link to FIXcrtm
@@ -565,7 +570,7 @@ if [ "${RUN_ENVIR}" = "nco" ]; then
 # Resolve the target directory that the FIXam symlink points to and check 
 # that it exists.
 #
-  path_resolved=$( readlink -m "$FIXam" )
+  path_resolved=$( $READLINK -m "$FIXam" )
   if [ ! -d "${path_resolved}" ]; then
     print_err_msg_exit "\
 In order to be able to generate a forecast experiment in NCO mode (i.e.
@@ -782,9 +787,9 @@ for (( i=0; i<${num_nml_vars}; i++ )); do
 
   mapping="${FV3_NML_VARNAME_TO_FIXam_FILES_MAPPING[$i]}"
   nml_var_name=$( printf "%s\n" "$mapping" | \
-                  sed -n -r -e "s/${regex_search}/\1/p" )
+                  $SED -n -r -e "s/${regex_search}/\1/p" )
   FIXam_fn=$( printf "%s\n" "$mapping" |
-              sed -n -r -e "s/${regex_search}/\2/p" )
+              $SED -n -r -e "s/${regex_search}/\2/p" )
 
   fp="\"\""
   if [ ! -z "${FIXam_fn}" ]; then
@@ -965,9 +970,11 @@ cp_vrfy $USHDIR/${EXPT_CONFIG_FN} $EXPTDIR
 #
 #-----------------------------------------------------------------------
 #
-wflow_db_fn="${WFLOW_XML_FN%.xml}.db"
-rocotorun_cmd="rocotorun -w ${WFLOW_XML_FN} -d ${wflow_db_fn} -v 10"
-rocotostat_cmd="rocotostat -w ${WFLOW_XML_FN} -d ${wflow_db_fn} -v 10"
+if [ "${WORKFLOW_MANAGER}" = "rocoto" ]; then
+  wflow_db_fn="${WFLOW_XML_FN%.xml}.db"
+  rocotorun_cmd="rocotorun -w ${WFLOW_XML_FN} -d ${wflow_db_fn} -v 10"
+  rocotostat_cmd="rocotostat -w ${WFLOW_XML_FN} -d ${wflow_db_fn} -v 10"
+fi
 
 print_info_msg "
 ========================================================================
@@ -983,25 +990,21 @@ The experiment directory is:
   > EXPTDIR=\"$EXPTDIR\"
 
 "
-case $MACHINE in
-
-"CHEYENNE")
+#
+#-----------------------------------------------------------------------
+#
+# If rocoto is required, print instructions on how to load and use it
+#
+#-----------------------------------------------------------------------
+#
+if [ "${WORKFLOW_MANAGER}" = "rocoto" ]; then
   print_info_msg "\
 To launch the workflow, first ensure that you have a compatible version
-of rocoto in your \$PATH. On Cheyenne, version 1.3.1 has been pre-built;
-you can load it in your \$PATH with one of the following commands, depending
-on your default shell:
+of rocoto available. For most pre-configured platforms, rocoto can be
+loaded via a module:
+  > module load rocoto
+For more details on rocoto, see the User's Guide.
 
-bash:
-  > export PATH=\${PATH}:/glade/p/ral/jntp/tools/rocoto/rocoto-1.3.1/bin/
-
-tcsh:
-  > setenv PATH \${PATH}:/glade/p/ral/jntp/tools/rocoto/rocoto-1.3.1/bin/
-"
-  ;;
-
-*)
-  print_info_msg "\
 To launch the workflow, first ensure that you have a compatible version
 of rocoto loaded.  For example, to load version 1.3.1 of rocoto, use
 
@@ -1009,11 +1012,7 @@ of rocoto loaded.  For example, to load version 1.3.1 of rocoto, use
 
 (This version has been tested on hera; later versions may also work but
 have not been tested.)
-"
-  ;;
 
-esac
-print_info_msg "
 To launch the workflow, change location to the experiment directory
 (EXPTDIR) and issue the rocotrun command, as follows:
 
@@ -1043,8 +1042,9 @@ edit the cron table):
 
 Done.
 "
+fi
 #
-echo -e "../fix/.agent points to " $(readlink -f ${HOMErrfs}/fix/.agent) "\n"
+echo -e "../fix/.agent points to " $($READLINK -f ${HOMErrfs}/fix/.agent) "\n"
 
 #
 # If necessary, run the NOMADS script to source external model data.
@@ -1090,7 +1090,12 @@ set -u
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+if [[ $(uname -s) == Darwin ]]; then
+  command -v greadlink >/dev/null 2>&1 || { echo >&2 "For Darwin-based operating systems (MacOS), the 'greadlink' utility is required to run the UFS SRW Application. Reference the User's Guide for more information about platform requirements. Aborting."; exit 1; }
+  scrfunc_fp=$( greadlink -f "${BASH_SOURCE[0]}" )
+else
+  scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+fi
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -1151,7 +1156,7 @@ rm "${tmp_fp}"
 # ful, move the log file in which the "tee" command saved the output of
 # the function to the experiment directory.
 #
-if [ $retval -eq 0 ]; then
+if [[ $retval == 0 ]]; then
   mv "${log_fp}" "$exptdir"
 #
 # If the call to the generate_FV3LAM_wflow function above was not suc-

@@ -19,12 +19,12 @@
 # set up currentime from CDATE 
 #-----------------------------------------------------------------------
 #
-currentime=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
+currentime=$(echo "${CDATE}" | $SED 's/\([[:digit:]]\{2\}\)$/ \1/')
 
 #-----------------------------------------------------------------------
 # Delete ptmp directories
 #-----------------------------------------------------------------------
-deletetime=$(date +%Y%m%d -d "${currentime} ${CLEAN_OLDPROD_HRS} hours ago")
+deletetime=$($DATE_UTIL +%Y%m%d -d "${currentime} ${CLEAN_OLDPROD_HRS} hours ago")
 echo "Deleting ptmp directories before ${deletetime}..."
 cd ${COMOUT_BASEDIR}
 set -A XX $(ls -d ${RUN}.20* | sort -r)
@@ -39,7 +39,7 @@ done
 #-----------------------------------------------------------------------
 # Delete stmp directories
 #-----------------------------------------------------------------------
-deletetime=$(date +%Y%m%d%H -d "${currentime} ${CLEAN_OLDRUN_HRS} hours ago")
+deletetime=$($DATE_UTIL +%Y%m%d%H -d "${currentime} ${CLEAN_OLDRUN_HRS} hours ago")
 echo "Deleting stmp directories before ${deletetime}..."
 cd ${CYCLE_BASEDIR}
 set -A XX $(ls -d 20* | sort -r)
@@ -53,7 +53,7 @@ done
 #-----------------------------------------------------------------------
 # Delete netCDF files
 #-----------------------------------------------------------------------
-deletetime=$(date +%Y%m%d%H -d "${currentime} ${CLEAN_OLDFCST_HRS} hours ago")
+deletetime=$($DATE_UTIL +%Y%m%d%H -d "${currentime} ${CLEAN_OLDFCST_HRS} hours ago")
 echo "Deleting netCDF files before ${deletetime}..."
 cd ${CYCLE_BASEDIR}
 set -A XX $(ls -d 20* | sort -r)
@@ -69,7 +69,7 @@ done
 #-----------------------------------------------------------------------
 # Delete duplicate postprod files in stmp
 #-----------------------------------------------------------------------
-deletetime=$(date +%Y%m%d%H -d "${currentime} ${CLEAN_OLDSTMPPOST_HRS} hours ago")
+deletetime=$($DATE_UTIL +%Y%m%d%H -d "${currentime} ${CLEAN_OLDSTMPPOST_HRS} hours ago")
 echo "Deleting stmp postprd files before ${deletetime}..."
 cd ${CYCLE_BASEDIR}
 set -A XX $(ls -d 20* | sort -r)
@@ -83,7 +83,7 @@ done
 #-----------------------------------------------------------------------
 # Delete old log files
 #-----------------------------------------------------------------------
-deletetime=$(date +%Y%m%d%H -d "${currentime} ${CLEAN_OLDLOG_HRS} hours ago")
+deletetime=$($DATE_UTIL +%Y%m%d%H -d "${currentime} ${CLEAN_OLDLOG_HRS} hours ago")
 echo "Deleting log files before ${deletetime}..."
 
 # Remove template date from last two levels
@@ -108,7 +108,7 @@ done
 #-----------------------------------------------------------------------
 # Delete nwges directories
 #-----------------------------------------------------------------------
-deletetime=$(date +%Y%m%d%H -d "${currentime} ${CLEAN_NWGES_HRS} hours ago")
+deletetime=$($DATE_UTIL +%Y%m%d%H -d "${currentime} ${CLEAN_NWGES_HRS} hours ago")
 echo "Deleting nwges directories before ${deletetime}..."
 cd ${NWGES_BASEDIR}
 set -A XX $(ls -d 20* | sort -r)

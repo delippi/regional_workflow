@@ -27,7 +27,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -143,11 +143,18 @@ case $MACHINE in
     APRUN="ibrun -n $nprocs"
     ;;
 
+  "MACOS")
+    APRUN=$RUN_CMD_POST
+    ;;
+
+  "LINUX")
+    APRUN=$RUN_CMD_POST
+    ;;
+
   *)
     print_err_msg_exit "\
 Run command has not been specified for this machine:
-  MACHINE = \"$MACHINE\"
-  APRUN = \"$APRUN\""
+  MACHINE = \"$MACHINE\""
     ;;
 
 esac
@@ -181,7 +188,7 @@ cyc=$hh
 dyn_file="${run_dir}/dynf${fhr}.nc"
 phy_file="${run_dir}/phyf${fhr}.nc"
 
-post_time=$( date --utc --date "${yyyymmdd} ${hh} UTC + ${fhr} hours" "+%Y%m%d%H" )
+post_time=$($DATE_UTIL --utc --date "${yyyymmdd} ${hh} UTC + ${fhr} hours" "+%Y%m%d%H" )
 post_yyyy=${post_time:0:4}
 post_mm=${post_time:4:2}
 post_dd=${post_time:6:2}
