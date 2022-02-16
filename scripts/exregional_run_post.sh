@@ -27,7 +27,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -104,7 +104,7 @@ case "$MACHINE" in
     export MP_LABELIO=yes
     export OMP_NUM_THREADS=$threads
 
-    APRUN="aprun -j 1 -n${ntasks} -N${ptile} -d${threads} -cc depth"
+    RUN_CMD_POST="aprun -j 1 -n${ntasks} -N${ptile} -d${threads} -cc depth"
     ;;
 
   "WCOSS_DELL_P3")
@@ -117,44 +117,25 @@ case "$MACHINE" in
     export MP_LABELIO=yes
     export OMP_NUM_THREADS=$threads
 
-    APRUN="mpirun"
-    ;;
-
-  "HERA")
-    APRUN="srun"
-    ;;
-
-  "ORION")
-    APRUN="srun"
-    ;;
-
-  "JET")
-    APRUN="srun"
-    ;;
-
-  "ODIN")
-    APRUN="srun -n 1"
-    ;;
-
-  "CHEYENNE")
-    module list
-    nprocs=$(( NNODES_RUN_POST*PPN_RUN_POST ))
-    APRUN="mpirun -np $nprocs"
-    ;;
-
-  "STAMPEDE")
-    nprocs=$(( NNODES_RUN_POST*PPN_RUN_POST ))
-    APRUN="ibrun -n $nprocs"
+    RUN_CMD_POST="mpirun"
     ;;
 
   *)
-    print_err_msg_exit "\
-Run command has not been specified for this machine:
-  MACHINE = \"$MACHINE\"
-  APRUN = \"$APRUN\""
+    source ${MACHINE_FILE}
     ;;
 
 esac
+
+nprocs=$(( NNODES_RUN_POST*PPN_RUN_POST ))
+if [ -z ${RUN_CMD_POST:-} ] ; then
+  print_err_msg_exit "\
+  Run command was not set in machine file. \
+  Please set RUN_CMD_POST for your platform"
+else
+  RUN_CMD_POST=$(eval echo ${RUN_CMD_POST})
+  print_info_msg "$VERBOSE" "
+  All executables will be submitted with command \'${RUN_CMD_POST}\'."
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -175,7 +156,11 @@ to the temporary work directory (tmp_dir):
   tmp_dir = \"${tmp_dir}\"
 ===================================================================="
 else
-  post_config_fp="${UPP_DIR}/parm/postxconfig-NT-fv3lam.txt"
+  if [ ${FCST_MODEL} = "fv3gfs_aqm" ]; then
+    post_config_fp="${UPP_DIR}/parm/postxconfig-NT-fv3lam_cmaq.txt"
+  else
+    post_config_fp="${UPP_DIR}/parm/postxconfig-NT-fv3lam.txt"
+  fi
   print_info_msg "
 ====================================================================
 Copying the default post flat file specified by post_config_fp to the 
@@ -221,8 +206,8 @@ tmmark="tm00"
 # minutes and seconds of the corresponding output forecast time.
 #
 # Note that if the forecast model is instructed to output at some hourly
-# interval (via the nfhout and nfhout_hf parameters in the MODEL_CONFIG_FN
-# file, with nsout set to a non-positive value), then the write-component
+# interval (via the output_fh parameter in the MODEL_CONFIG_FN file, 
+# with nsout set to a non-positive value), then the write-component
 # output file names will not contain any suffix for the minutes and seconds.
 # For this reason, when SUB_HOURLY_POST is not set to "TRUE", mnts_sec_str
 # must be set to a null string.
@@ -230,7 +215,7 @@ tmmark="tm00"
 mnts_secs_str=""
 if [ "${SUB_HOURLY_POST}" = "TRUE" ]; then
   if [ ${fhr}${fmn} = "00000" ]; then
-    mnts_secs_str=":"$( date --utc --date "${yyyymmdd} ${hh} UTC + ${dt_atmos} seconds" "+%M:%S" )
+    mnts_secs_str=":"$( $DATE_UTIL --utc --date "${yyyymmdd} ${hh} UTC + ${dt_atmos} seconds" "+%M:%S" )
   else
     mnts_secs_str=":${fmn}:00"
   fi
@@ -244,7 +229,7 @@ phy_file="${run_dir}/phyf${fhr}${mnts_secs_str}.nc"
 # Set parameters that specify the actual time (not forecast time) of the
 # output.
 #
-post_time=$( date --utc --date "${yyyymmdd} ${hh} UTC + ${fhr} hours + ${fmn} minutes" "+%Y%m%d%H%M" )
+post_time=$( $DATE_UTIL --utc --date "${yyyymmdd} ${hh} UTC + ${fhr} hours + ${fmn} minutes" "+%Y%m%d%H%M" )
 post_yyyy=${post_time:0:4}
 post_mm=${post_time:4:2}
 post_dd=${post_time:6:2}
@@ -253,6 +238,11 @@ post_mn=${post_time:10:2}
 #
 # Create the input text file to the post-processor executable.
 #
+if [ ${FCST_MODEL} = "fv3gfs_aqm" ]; then
+  post_itag_add="aqfcmaq_on=.true.,"
+else
+  post_itag_add=""
+fi
 cat > itag <<EOF
 ${dyn_file}
 netcdf
@@ -262,7 +252,7 @@ FV3R
 ${phy_file}
 
  &NAMPGB
- KPO=47,PO=1000.,975.,950.,925.,900.,875.,850.,825.,800.,775.,750.,725.,700.,675.,650.,625.,600.,575.,550.,525.,500.,475.,450.,425.,400.,375.,350.,325.,300.,275.,250.,225.,200.,175.,150.,125.,100.,70.,50.,30.,20.,10.,7.,5.,3.,2.,1.,
+ KPO=47,PO=1000.,975.,950.,925.,900.,875.,850.,825.,800.,775.,750.,725.,700.,675.,650.,625.,600.,575.,550.,525.,500.,475.,450.,425.,400.,375.,350.,325.,300.,275.,250.,225.,200.,175.,150.,125.,100.,70.,50.,30.,20.,10.,7.,5.,3.,2.,1.,${post_itag_add}
  /
 EOF
 #
@@ -276,7 +266,7 @@ EOF
 print_info_msg "$VERBOSE" "
 Starting post-processing for fhr = $fhr hr..."
 
-${APRUN} ${EXECDIR}/upp.x < itag || print_err_msg_exit "\
+${RUN_CMD_POST} ${EXECDIR}/upp.x < itag || print_err_msg_exit "\
 Call to executable to run post for forecast hour $fhr returned with non-
 zero exit code."
 #
@@ -329,11 +319,11 @@ post_renamed_fn_suffix="f${fhr}${post_mn_or_null}.${tmmark}.grib2"
 # rename, and create symlinks to them.
 #
 cd_vrfy "${postprd_dir}"
-basetime=$( date --date "$yyyymmdd $hh" +%y%j%H%M )
+basetime=$( $DATE_UTIL --date "$yyyymmdd $hh" +%y%j%H%M )
 symlink_suffix="_${basetime}f${fhr}${post_mn}"
 fids=( "prslev" "natlev" )
 for fid in "${fids[@]}"; do
-  FID="${fid^^}"
+  FID=$(echo_uppercase $fid)
   post_orig_fn="${FID}.${post_fn_suffix}"
   post_renamed_fn="${NET}.t${cyc}z.${fid}${post_renamed_fn_suffix}"
   mv_vrfy ${tmp_dir}/${post_orig_fn} ${post_renamed_fn}

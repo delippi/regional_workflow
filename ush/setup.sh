@@ -1,3 +1,4 @@
+#!/bin/bash
 #
 #-----------------------------------------------------------------------
 #
@@ -23,7 +24,7 @@ function setup() {
 #
 #-----------------------------------------------------------------------
 #
-local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+local scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 local scrfunc_fn=$( basename "${scrfunc_fp}" )
 local scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -49,7 +50,13 @@ cd_vrfy ${scrfunc_dir}
 #
 #-----------------------------------------------------------------------
 #
+
 . ./source_util_funcs.sh
+
+print_info_msg "
+========================================================================
+Starting function ${func_name}() in \"${scrfunc_fn}\"...
+========================================================================"
 #
 #-----------------------------------------------------------------------
 #
@@ -57,6 +64,7 @@ cd_vrfy ${scrfunc_dir}
 #
 #-----------------------------------------------------------------------
 #
+. ./check_expt_config_vars.sh
 . ./set_cycle_dates.sh
 . ./set_gridparams_GFDLgrid.sh
 . ./set_gridparams_ESGgrid.sh
@@ -105,7 +113,9 @@ if [ -f "${EXPT_CONFIG_FN}" ]; then
 # configuration file are also assigned default values in the default 
 # configuration file.
 #
-  . ./compare_config_scripts.sh
+  check_expt_config_vars \
+    default_config_fp="./${EXPT_DEFAULT_CONFIG_FN}" \
+    config_fp="./${EXPT_CONFIG_FN}"
 #
 # Now source the user-specified configuration file.
 #
@@ -123,253 +133,77 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-# Make sure that RUN_ENVIR is set to a valid value.
+# Make sure that user-defined variables are set to valid values
+#
+# Set binary switch variables to either "TRUE" or "FALSE" by calling
+# boolify so we don't have to consider other valid values later on
 #
 #-----------------------------------------------------------------------
 #
 check_var_valid_value "RUN_ENVIR" "valid_vals_RUN_ENVIR"
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that VERBOSE is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+
 check_var_valid_value "VERBOSE" "valid_vals_VERBOSE"
+VERBOSE=$(boolify $VERBOSE)
+
+check_var_valid_value "DEBUG" "valid_vals_DEBUG"
+DEBUG=$(boolify $DEBUG)
 #
-# Set VERBOSE to either "TRUE" or "FALSE" so we don't have to consider
-# other valid values later on.
+#-----------------------------------------------------------------------
 #
-VERBOSE=${VERBOSE^^}
-if [ "$VERBOSE" = "TRUE" ] || \
-   [ "$VERBOSE" = "YES" ]; then
+# If DEBUG is set to "TRUE", set VERBOSE to "TRUE" to print out all
+# of the VERBOSE output (in addition to any DEBUG output).
+#
+#-----------------------------------------------------------------------
+#
+if [ "$DEBUG" = "TRUE" ]; then
+  print_info_msg "
+Setting VERBOSE to \"TRUE\" because DEBUG has been set to \"TRUE\"..."
   VERBOSE="TRUE"
-elif [ "$VERBOSE" = "FALSE" ] || \
-     [ "$VERBOSE" = "NO" ]; then
-  VERBOSE="FALSE"
 fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that USE_CRON_TO_RELAUNCH is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+
 check_var_valid_value "USE_CRON_TO_RELAUNCH" "valid_vals_USE_CRON_TO_RELAUNCH"
-#
-# Set USE_CRON_TO_RELAUNCH to either "TRUE" or "FALSE" so we don't have to consider
-# other valid values later on.
-#
-USE_CRON_TO_RELAUNCH=${USE_CRON_TO_RELAUNCH^^}
-if [ "${USE_CRON_TO_RELAUNCH}" = "TRUE" ] || \
-   [ "${USE_CRON_TO_RELAUNCH}" = "YES" ]; then
-  USE_CRON_TO_RELAUNCH="TRUE"
-elif [ "${USE_CRON_TO_RELAUNCH}" = "FALSE" ] || \
-     [ "${USE_CRON_TO_RELAUNCH}" = "NO" ]; then
-  USE_CRON_TO_RELAUNCH="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that RUN_TASK_MAKE_GRID is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+USE_CRON_TO_RELAUNCH=$(boolify $USE_CRON_TO_RELAUNCH)
+
 check_var_valid_value "RUN_TASK_MAKE_GRID" "valid_vals_RUN_TASK_MAKE_GRID"
-#
-# Set RUN_TASK_MAKE_GRID to either "TRUE" or "FALSE" so we don't have to
-# consider other valid values later on.
-#
-RUN_TASK_MAKE_GRID=${RUN_TASK_MAKE_GRID^^}
-if [ "${RUN_TASK_MAKE_GRID}" = "TRUE" ] || \
-   [ "${RUN_TASK_MAKE_GRID}" = "YES" ]; then
-  RUN_TASK_MAKE_GRID="TRUE"
-elif [ "${RUN_TASK_MAKE_GRID}" = "FALSE" ] || \
-     [ "${RUN_TASK_MAKE_GRID}" = "NO" ]; then
-  RUN_TASK_MAKE_GRID="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that RUN_TASK_MAKE_OROG is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+RUN_TASK_MAKE_GRID=$(boolify $RUN_TASK_MAKE_GRID)
+
 check_var_valid_value "RUN_TASK_MAKE_OROG" "valid_vals_RUN_TASK_MAKE_OROG"
-#
-# Set RUN_TASK_MAKE_OROG to either "TRUE" or "FALSE" so we don't have to
-# consider other valid values later on.
-#
-RUN_TASK_MAKE_OROG=${RUN_TASK_MAKE_OROG^^}
-if [ "${RUN_TASK_MAKE_OROG}" = "TRUE" ] || \
-   [ "${RUN_TASK_MAKE_OROG}" = "YES" ]; then
-  RUN_TASK_MAKE_OROG="TRUE"
-elif [ "${RUN_TASK_MAKE_OROG}" = "FALSE" ] || \
-     [ "${RUN_TASK_MAKE_OROG}" = "NO" ]; then
-  RUN_TASK_MAKE_OROG="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that RUN_TASK_MAKE_SFC_CLIMO is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+RUN_TASK_MAKE_OROG=$(boolify $RUN_TASK_MAKE_OROG)
+
 check_var_valid_value \
   "RUN_TASK_MAKE_SFC_CLIMO" "valid_vals_RUN_TASK_MAKE_SFC_CLIMO"
-#
-# Set RUN_TASK_MAKE_SFC_CLIMO to either "TRUE" or "FALSE" so we don't
-# have to consider other valid values later on.
-#
-RUN_TASK_MAKE_SFC_CLIMO=${RUN_TASK_MAKE_SFC_CLIMO^^}
-if [ "${RUN_TASK_MAKE_SFC_CLIMO}" = "TRUE" ] || \
-   [ "${RUN_TASK_MAKE_SFC_CLIMO}" = "YES" ]; then
-  RUN_TASK_MAKE_SFC_CLIMO="TRUE"
-elif [ "${RUN_TASK_MAKE_SFC_CLIMO}" = "FALSE" ] || \
-     [ "${RUN_TASK_MAKE_SFC_CLIMO}" = "NO" ]; then
-  RUN_TASK_MAKE_SFC_CLIMO="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that RUN_TASK_RUN_POST is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+RUN_TASK_MAKE_SFC_CLIMO=$(boolify $RUN_TASK_MAKE_SFC_CLIMO)
+
 check_var_valid_value \
   "RUN_TASK_RUN_POST" "valid_vals_RUN_TASK_RUN_POST"
-#
-# Set RUN_TASK_RUN_POST to either "TRUE" or "FALSE" so we don't
-# have to consider other valid values later on.
-#
-RUN_TASK_RUN_POST=${RUN_TASK_RUN_POST^^}
-if [ "${RUN_TASK_RUN_POST}" = "TRUE" ] || \
-   [ "${RUN_TASK_RUN_POST}" = "YES" ]; then
-  RUN_TASK_RUN_POST="TRUE"
-elif [ "${RUN_TASK_RUN_POST}" = "FALSE" ] || \
-     [ "${RUN_TASK_RUN_POST}" = "NO" ]; then
-  RUN_TASK_RUN_POST="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that RUN_TASK_VX_GRIDSTAT is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+RUN_TASK_RUN_POST=$(boolify $RUN_TASK_RUN_POST)
+
 check_var_valid_value "RUN_TASK_VX_GRIDSTAT" "valid_vals_RUN_TASK_VX_GRIDSTAT"
-#
-# Set RUN_TASK_VX_GRIDSTAT to either "TRUE" or "FALSE" so we don't have to
-# consider other valid values later on.
-#
-RUN_TASK_VX_GRIDSTAT=${RUN_TASK_VX_GRIDSTAT^^}
-if [ "${RUN_TASK_VX_GRIDSTAT}" = "TRUE" ] || \
-   [ "${RUN_TASK_VX_GRIDSTAT}" = "YES" ]; then
-  RUN_TASK_VX_GRIDSTAT="TRUE"
-elif [ "${RUN_TASK_VX_GRIDSTAT}" = "FALSE" ] || \
-     [ "${RUN_TASK_VX_GRIDSTAT}" = "NO" ]; then
-  RUN_TASK_VX_GRIDSTAT="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that RUN_TASK_VX_POINTSTAT is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+RUN_TASK_VX_GRIDSTAT=$(boolify $RUN_TASK_VX_GRIDSTAT)
+
 check_var_valid_value "RUN_TASK_VX_POINTSTAT" "valid_vals_RUN_TASK_VX_POINTSTAT"
-#
-# Set RUN_TASK_VX_POINTSTAT to either "TRUE" or "FALSE" so we don't have to
-# consider other valid values later on.
-#
-RUN_TASK_VX_POINTSTAT=${RUN_TASK_VX_POINTSTAT^^}
-if [ "${RUN_TASK_VX_POINTSTAT}" = "TRUE" ] || \
-   [ "${RUN_TASK_VX_POINTSTAT}" = "YES" ]; then
-  RUN_TASK_VX_POINTSTAT="TRUE"
-elif [ "${RUN_TASK_VX_POINTSTAT}" = "FALSE" ] || \
-     [ "${RUN_TASK_VX_POINTSTAT}" = "NO" ]; then
-  RUN_TASK_VX_POINTSTAT="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that DO_SHUM is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+RUN_TASK_VX_POINTSTAT=$(boolify $RUN_TASK_VX_POINTSTAT)
+
+check_var_valid_value "RUN_TASK_VX_ENSGRID" "valid_vals_RUN_TASK_VX_ENSGRID"
+RUN_TASK_VX_ENSGRID=$(boolify $RUN_TASK_VX_ENSGRID)
+
+check_var_valid_value "RUN_TASK_VX_ENSPOINT" "valid_vals_RUN_TASK_VX_ENSPOINT"
+RUN_TASK_VX_ENSPOINT=$(boolify $RUN_TASK_VX_ENSPOINT)
+
+check_var_valid_value "USE_FVCOM" "valid_vals_USE_FVCOM"
+USE_FVCOM=$(boolify $USE_FVCOM)
+
 check_var_valid_value "DO_SHUM" "valid_vals_DO_SHUM"
-#
-# Set DO_SHUM to either "TRUE" or "FALSE" so we don't
-# have to consider other valid values later on.
-#
-DO_SHUM=${DO_SHUM^^}
-if [ "${DO_SHUM}" = "TRUE" ] || \
-   [ "${DO_SHUM}" = "YES" ]; then
-  DO_SHUM="TRUE"
-elif [ "${DO_SHUM}" = "FALSE" ] || \
-     [ "${DO_SHUM}" = "NO" ]; then
-  DO_SHUM="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that DO_SPPT is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+DO_SHUM=$(boolify $DO_SHUM)
+
 check_var_valid_value "DO_SPPT" "valid_vals_DO_SPPT"
-#
-# Set DO_SPPT to either "TRUE" or "FALSE" so we don't
-# have to consider other valid values later on.
-#
-DO_SPPT=${DO_SPPT^^}
-if [ "${DO_SPPT}" = "TRUE" ] || \
-   [ "${DO_SPPT}" = "YES" ]; then
-  DO_SPPT="TRUE"
-elif [ "${DO_SPPT}" = "FALSE" ] || \
-     [ "${DO_SPPT}" = "NO" ]; then
-  DO_SPPT="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that DO_SKEB is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+DO_SPPT=$(boolify $DO_SPPT)
+
 check_var_valid_value "DO_SKEB" "valid_vals_DO_SKEB"
-#
-# Set DO_SKEB to either "TRUE" or "FALSE" so we don't
-# have to consider other valid values later on.
-#
-DO_SKEB=${DO_SKEB^^}
-if [ "${DO_SKEB}" = "TRUE" ] || \
-   [ "${DO_SKEB}" = "YES" ]; then
-  DO_SKEB="TRUE"
-elif [ "${DO_SKEB}" = "FALSE" ] || \
-     [ "${DO_SKEB}" = "NO" ]; then
-  DO_SKEB="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that DO_SPP is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+DO_SKEB=$(boolify $DO_SKEB)
+
 check_var_valid_value "DO_SPP" "valid_vals_DO_SPP"
-#
-# Set DO_SPP to either "TRUE" or "FALSE" so we don't
-# have to consider other valid values later on.
-#
-DO_SPP=${DO_SPP^^}
-if [ "${DO_SPP}" = "TRUE" ] || \
-   [ "${DO_SPP}" = "YES" ]; then
-  DO_SPP="TRUE"
-elif [ "${DO_SPP}" = "FALSE" ] || \
-     [ "${DO_SPP}" = "NO" ]; then
-  DO_SPP="FALSE"
-fi
+DO_SPP=$(boolify $DO_SPP)
 #
 #-----------------------------------------------------------------------
 #
@@ -405,45 +239,8 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-# Make sure that USE_FVCOM is set to a valid value and assign directory
-# and file names.
-#
-#-----------------------------------------------------------------------
-#
-check_var_valid_value "USE_FVCOM" "valid_vals_USE_FVCOM"
-#
-# Set USE_FVCOM to either "TRUE" or "FALSE" so we don't have to consider
-# other valid values later on.
-#
-USE_FVCOM=${USE_FVCOM^^}
-if [ "$USE_FVCOM" = "TRUE" ] || \
-   [ "$USE_FVCOM" = "YES" ]; then
-  USE_FVCOM="TRUE"
-elif [ "$USE_FVCOM" = "FALSE" ] || \
-     [ "$USE_FVCOM" = "NO" ]; then
-  USE_FVCOM="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that SUB_HOURLY_POST and DT_SUBHOURLY_POST_MNTS are set to 
-# valid values.
-#
-#-----------------------------------------------------------------------
-#
 check_var_valid_value "SUB_HOURLY_POST" "valid_vals_SUB_HOURLY_POST"
-#
-# Set SUB_HOURLY_POST to either "TRUE" or "FALSE" so we don't have to consider
-# other valid values later on.
-#
-SUB_HOURLY_POST=${SUB_HOURLY_POST^^}
-if [ "${SUB_HOURLY_POST}" = "TRUE" ] || \
-   [ "${SUB_HOURLY_POST}" = "YES" ]; then
-  SUB_HOURLY_POST="TRUE"
-elif [ "${SUB_HOURLY_POST}" = "FALSE" ] || \
-     [ "${SUB_HOURLY_POST}" = "NO" ]; then
-  SUB_HOURLY_POST="FALSE"
-fi
+SUB_HOURLY_POST=$(boolify $SUB_HOURLY_POST)
 #
 #-----------------------------------------------------------------------
 #
@@ -455,136 +252,227 @@ check_var_valid_value "DOT_OR_USCORE" "valid_vals_DOT_OR_USCORE"
 #
 #-----------------------------------------------------------------------
 #
+# Make sure that USE_FVCOM is set to a valid value and assign directory
+# and file names.
+# 
+# Make sure that FVCOM_WCSTART is set to lowercase "warm" or "cold"
+#
+#-----------------------------------------------------------------------
+#
+check_var_valid_value "USE_FVCOM" "valid_vals_USE_FVCOM"
+USE_FVCOM=$(boolify $USE_FVCOM)
+check_var_valid_value "FVCOM_WCSTART" "valid_vals_FVCOM_WCSTART"
+FVCOM_WCSTART=$(echo_lowercase $FVCOM_WCSTART)
+#
+#-----------------------------------------------------------------------
+#
+# Set various directories.
+#
+# HOMErrfs:
+# Top directory of the clone of the FV3-LAM workflow git repository.
+#
+# USHDIR:
+# Directory containing the shell scripts called by the workflow.
+#
+# SCRIPTSDIR:
+# Directory containing the ex scripts called by the workflow.
+#
+# JOBSSDIR:
+# Directory containing the jjobs scripts called by the workflow.
+#
+# SORCDIR:
+# Directory containing various source codes.
+#
+# PARMDIR:
+# Directory containing parameter files, template files, etc.
+#
+# EXECDIR:
+# Directory containing various executable files.
+#
+# TEMPLATE_DIR:
+# Directory in which templates of various FV3-LAM input files are locat-
+# ed.
+#
+# UFS_WTHR_MDL_DIR:
+# Directory in which the (NEMS-enabled) FV3-LAM application is located.
+# This directory includes subdirectories for FV3, NEMS, and FMS.
+#
+#-----------------------------------------------------------------------
+#
+
+#
+# The current script should be located in the ush subdirectory of the 
+# workflow directory.  Thus, the workflow directory is the one above the
+# directory of the current script.
+#
+SR_WX_APP_TOP_DIR=${scrfunc_dir%/*/*}
+
+#
+#-----------------------------------------------------------------------
+#
+# Set the base directories in which codes obtained from external reposi-
+# tories (using the manage_externals tool) are placed.  Obtain the rela-
+# tive paths to these directories by reading them in from the manage_ex-
+# ternals configuration file.  (Note that these are relative to the lo-
+# cation of the configuration file.)  Then form the full paths to these
+# directories.  Finally, make sure that each of these directories actu-
+# ally exists.
+#
+#-----------------------------------------------------------------------
+#
+mng_extrns_cfg_fn=$( $READLINK -f "${SR_WX_APP_TOP_DIR}/Externals.cfg" )
+property_name="local_path"
+#
+# Get the path to the workflow scripts
+#
+external_name=regional_workflow
+HOMErrfs=$( \
+get_manage_externals_config_property \
+"${mng_extrns_cfg_fn}" "${external_name}" "${property_name}" ) || \
+print_err_msg_exit "\
+Call to function get_manage_externals_config_property failed."
+HOMErrfs="${SR_WX_APP_TOP_DIR}/${HOMErrfs}"
+set +x
+#
+# Get the base directory of the FV3 forecast model code.
+#
+external_name="${FCST_MODEL}"
+UFS_WTHR_MDL_DIR=$( \
+get_manage_externals_config_property \
+"${mng_extrns_cfg_fn}" "${external_name}" "${property_name}" ) || \
+print_err_msg_exit "\
+Call to function get_manage_externals_config_property failed."
+
+UFS_WTHR_MDL_DIR="${SR_WX_APP_TOP_DIR}/${UFS_WTHR_MDL_DIR}"
+if [ ! -d "${UFS_WTHR_MDL_DIR}" ]; then
+  print_err_msg_exit "\
+The base directory in which the FV3 source code should be located
+(UFS_WTHR_MDL_DIR) does not exist:
+  UFS_WTHR_MDL_DIR = \"${UFS_WTHR_MDL_DIR}\"
+Please clone the external repository containing the code in this directory,
+build the executable, and then rerun the workflow."
+fi
+#
+# Get the base directory of the UFS_UTILS codes.
+#
+external_name="ufs_utils"
+UFS_UTILS_DIR=$( \
+get_manage_externals_config_property \
+"${mng_extrns_cfg_fn}" "${external_name}" "${property_name}" ) || \
+print_err_msg_exit "\
+Call to function get_manage_externals_config_property failed."
+
+UFS_UTILS_DIR="${SR_WX_APP_TOP_DIR}/${UFS_UTILS_DIR}"
+if [ ! -d "${UFS_UTILS_DIR}" ]; then
+  print_err_msg_exit "\
+The base directory in which the UFS utilities source codes should be lo-
+cated (UFS_UTILS_DIR) does not exist:
+  UFS_UTILS_DIR = \"${UFS_UTILS_DIR}\"
+Please clone the external repository containing the code in this direct-
+ory, build the executables, and then rerun the workflow."
+fi
+#
+# Get the base directory of the UPP code.
+#
+external_name="UPP"
+UPP_DIR=$( \
+get_manage_externals_config_property \
+"${mng_extrns_cfg_fn}" "${external_name}" "${property_name}" ) || \
+print_err_msg_exit "\
+Call to function get_manage_externals_config_property failed."
+
+UPP_DIR="${SR_WX_APP_TOP_DIR}/${UPP_DIR}"
+if [ ! -d "${UPP_DIR}" ]; then
+  print_err_msg_exit "\
+The base directory in which the UPP source code should be located
+(UPP_DIR) does not exist:
+  UPP_DIR = \"${UPP_DIR}\"
+Please clone the external repository containing the code in this directory,
+build the executable, and then rerun the workflow."
+fi
+
+#
+# Define some other useful paths
+#
+USHDIR="$HOMErrfs/ush"
+SCRIPTSDIR="$HOMErrfs/scripts"
+JOBSDIR="$HOMErrfs/jobs"
+SORCDIR="$HOMErrfs/sorc"
+SRC_DIR="${SR_WX_APP_TOP_DIR}/src"
+PARMDIR="$HOMErrfs/parm"
+MODULES_DIR="$HOMErrfs/modulefiles"
+EXECDIR="${SR_WX_APP_TOP_DIR}/${EXEC_SUBDIR}"
+TEMPLATE_DIR="$USHDIR/templates"
+VX_CONFIG_DIR="$TEMPLATE_DIR/parm"
+METPLUS_CONF="$TEMPLATE_DIR/parm/metplus"
+MET_CONFIG="$TEMPLATE_DIR/parm/met"
+
+#
+#-----------------------------------------------------------------------
+#
 # Convert machine name to upper case if necessary.  Then make sure that
 # MACHINE is set to a valid value.
 #
 #-----------------------------------------------------------------------
 #
-MACHINE=$( printf "%s" "$MACHINE" | sed -e 's/\(.*\)/\U\1/' )
+MACHINE=$( printf "%s" "$MACHINE" | $SED -e 's/\(.*\)/\U\1/' )
 check_var_valid_value "MACHINE" "valid_vals_MACHINE"
 #
 #-----------------------------------------------------------------------
 #
-# Set the number of cores per node, the job scheduler, and the names of
-# several queues.  These queues are defined in the default and local 
-# workflow/experiment configuration script.
-#
-# Also, set the machine-dependent flag RELAITVE_OR_NULL that specifies
-# the flag to pass to the link creation command (ln_vrfy) when attempting 
-# to create relative symlinks.  On machines that don't support relative
-# symlinks, it should be set to a null string.
+# Source the machine config file containing architechture information,
+# queue names, and supported input file paths.
 #
 #-----------------------------------------------------------------------
 #
-RELATIVE_LINK_FLAG=""
+RELATIVE_LINK_FLAG="--relative"
+MACHINE_FILE=${MACHINE_FILE:-${USHDIR}/machine/$(echo_lowercase $MACHINE).sh}
+source ${MACHINE_FILE}
 
-case "$MACHINE" in
+if [ -z "${NCORES_PER_NODE:-}" ]; then
+  print_err_msg_exit "\
+    NCORES_PER_NODE has not been specified in the file ${MACHINE_FILE}
+    Please ensure this value has been set for your desired platform. "
+fi
 
-  "WCOSS_CRAY")
-    NCORES_PER_NODE="24"
-    SCHED="lsfcray"
-    QUEUE_DEFAULT=${QUEUE_DEFAULT:-"dev"}
-    QUEUE_HPSS=${QUEUE_HPSS:-"dev_transfer"}
-    QUEUE_FCST=${QUEUE_FCST:-"dev"}
-#
-    RELATIVE_LINK_FLAG=""
-    ;;
+if [ -z "$FIXgsm" -o -z "$FIXaer" -o -z "$FIXlut" -o -z "$TOPO_DIR" -o -z "$SFC_CLIMO_INPUT_DIR" ]; then
+      print_err_msg_exit "\
+One or more fix file directories have not been specified for this machine:
+  MACHINE = \"$MACHINE\"
+  FIXgsm = \"${FIXgsm:-\"\"}
+  FIXaer = \"${FIXaer:-\"\"}
+  FIXlut = \"${FIXlut:-\"\"}
+  TOPO_DIR = \"${TOPO_DIR:-\"\"}
+  SFC_CLIMO_INPUT_DIR = \"${SFC_CLIMO_INPUT_DIR:-\"\"}
+  FIXLAM_NCO_BASEDIR = \"${FIXLAM_NCO_BASEDIR:-\"\"}
+You can specify the missing location(s) in ${machine_file}"
+fi
 
-  "WCOSS_DELL_P3")
-    NCORES_PER_NODE=24
-    SCHED="lsf"
-    QUEUE_DEFAULT=${QUEUE_DEFAULT:-"dev"}
-    QUEUE_HPSS=${QUEUE_HPSS:-"dev_transfer"}
-    QUEUE_FCST=${QUEUE_FCST:-"dev"}
-#
-    RELATIVE_LINK_FLAG="--relative"
-    ;;
 
-  "HERA")
-    NCORES_PER_NODE=40
-    SCHED=${SCHED:-"slurm"}
-    PARTITION_DEFAULT=${PARTITION_DEFAULT:-"hera"}
-    QUEUE_DEFAULT=${QUEUE_DEFAULT:-"batch"}
-    PARTITION_HPSS=${PARTITION_HPSS:-"service"}
-    QUEUE_HPSS=${QUEUE_HPSS:-"batch"}
-    PARTITION_FCST=${PARTITION_FCST:-"hera"}
-    QUEUE_FCST=${QUEUE_FCST:-"batch"}
-#
-    RELATIVE_LINK_FLAG="--relative"
-    ;;
-
-  "ORION")
-    NCORES_PER_NODE=40
-    SCHED=${SCHED:-"slurm"}
-    PARTITION_DEFAULT=${PARTITION_DEFAULT:-"orion"}
-    QUEUE_DEFAULT=${QUEUE_DEFAULT:-"batch"}
-    PARTITION_HPSS=${PARTITION_HPSS:-"service"}
-    QUEUE_HPSS=${QUEUE_HPSS:-"batch"}
-    PARTITION_FCST=${PARTITION_FCST:-"orion"}
-    QUEUE_FCST=${QUEUE_FCST:-"batch"}
-#
-    RELATIVE_LINK_FLAG="--relative"
-    ;;
-
-  "JET")
-    NCORES_PER_NODE=24
-    SCHED=${SCHED:-"slurm"}
-    PARTITION_DEFAULT=${PARTITION_DEFAULT:-"sjet,vjet,kjet,xjet"}
-    QUEUE_DEFAULT=${QUEUE_DEFAULT:-"batch"}
-    PARTITION_HPSS=${PARTITION_HPSS:-"service"}
-    QUEUE_HPSS=${QUEUE_HPSS:-"batch"}
-    PARTITION_FCST=${PARTITION_FCST:-"sjet,vjet,kjet,xjet"}
-    QUEUE_FCST=${QUEUE_FCST:-"batch"}
-#
-    RELATIVE_LINK_FLAG="--relative"
-    ;;
-
-  "ODIN")
-    NCORES_PER_NODE=24
-    SCHED=${SCHED:-"slurm"}
-    PARTITION_DEFAULT=${PARTITION_DEFAULT:-"workq"}
-    QUEUE_DEFAULT=${QUEUE_DEFAULT:-"workq"}
-    PARTITION_HPSS=${PARTITION_HPSS:-"workq"}
-    QUEUE_HPSS=${QUEUE_HPSS:-"workq"}
-    PARTITION_FCST=${PARTITION_FCST:-"workq"}
-    QUEUE_FCST=${QUEUE_FCST:-"workq"}
-#
-    RELATIVE_LINK_FLAG="--relative"
-    ;;
-
-  "CHEYENNE")
-    NCORES_PER_NODE=36
-    SCHED=${SCHED:-"pbspro"}
-    QUEUE_DEFAULT=${QUEUE_DEFAULT:-"regular"}
-    QUEUE_HPSS=${QUEUE_HPSS:-"regular"}
-    QUEUE_FCST=${QUEUE_FCST:-"regular"}
-#
-    RELATIVE_LINK_FLAG="--relative"
-    ;;
-
-  "STAMPEDE")
-    NCORES_PER_NODE=68
-    SCHED="slurm"
-    PARTITION_DEFAULT=${PARTITION_DEFAULT:-"normal"}
-    QUEUE_DEFAULT=${QUEUE_DEFAULT:-"normal"}
-    PARTITION_HPSS=${PARTITION_HPSS:-"normal"}
-    QUEUE_HPSS=${QUEUE_HPSS:-"normal"}
-    PARTITION_FCST=${PARTITION_FCST:-"normal"}
-    QUEUE_FCST=${QUEUE_FCST:-"normal"}
-#
-    RELATIVE_LINK_FLAG="--relative"
-    ;;
-
-esac
 #
 #-----------------------------------------------------------------------
 #
-# Calculate PPN_RUN_FCST from NCORES_PER_NODE and OMP_NUM_THREADS_RUN_FCST
+# Set the names of the build and workflow environment files (if not 
+# already specified by the user).  These are the files that need to be 
+# sourced before building the component SRW App codes and running various 
+# workflow scripts, respectively.
 #
 #-----------------------------------------------------------------------
 #
-PPN_RUN_FCST_OPT="$(( ${NCORES_PER_NODE} / ${OMP_NUM_THREADS_RUN_FCST} ))"
-PPN_RUN_FCST=${PPN_RUN_FCST:-${PPN_RUN_FCST_OPT}}
+machine=$(echo_lowercase ${MACHINE})
+WFLOW_ENV_FN=${WFLOW_ENV_FN:-"wflow_${machine}.env"}
+BUILD_ENV_FN=${BUILD_ENV_FN:-"build_${machine}_${COMPILER}.env"}
+#
+#-----------------------------------------------------------------------
+#
+# Calculate a default value for the number of processes per node for the
+# RUN_FCST_TN task.  Then set PPN_RUN_FCST to this default value if 
+# PPN_RUN_FCST is not already specified by the user.
+#
+#-----------------------------------------------------------------------
+#
+ppn_run_fcst_default="$(( ${NCORES_PER_NODE} / ${OMP_NUM_THREADS_RUN_FCST} ))"
+PPN_RUN_FCST=${PPN_RUN_FCST:-${ppn_run_fcst_default}}
 #
 #-----------------------------------------------------------------------
 #
@@ -592,20 +480,23 @@ PPN_RUN_FCST=${PPN_RUN_FCST:-${PPN_RUN_FCST_OPT}}
 #
 #-----------------------------------------------------------------------
 #
-SCHED="${SCHED,,}"
+SCHED=$(echo_lowercase $SCHED)
 check_var_valid_value "SCHED" "valid_vals_SCHED"
 #
 #-----------------------------------------------------------------------
 #
-# Verify that the ACCOUNT variable is not empty.  If it is, print out an
-# error message and exit.
+# If we are using a workflow manager check that the ACCOUNT variable is
+# not empty.
 #
 #-----------------------------------------------------------------------
 #
-if [ -z "$ACCOUNT" ]; then
-  print_err_msg_exit "\
-The variable ACCOUNT cannot be empty:
-  ACCOUNT = \"$ACCOUNT\""
+if [ "$WORKFLOW_MANAGER" != "none" ]; then
+  if [ -z "$ACCOUNT" ]; then
+    print_err_msg_exit "\
+The variable ACCOUNT cannot be empty if you are using a workflow manager:
+  ACCOUNT = \"$ACCOUNT\"
+  WORKFLOW_MANAGER = \"$WORKFLOW_MANAGER\""
+  fi
 fi
 #
 #-----------------------------------------------------------------------
@@ -668,6 +559,23 @@ check_var_valid_value \
 #
 #-----------------------------------------------------------------------
 #
+# Make sure that USE_MERRA_CLIMO is set to a valid value.
+#
+#-----------------------------------------------------------------------
+#
+check_var_valid_value "USE_MERRA_CLIMO" "valid_vals_USE_MERRA_CLIMO"
+#
+# Set USE_MERRA_CLIMO to either "TRUE" or "FALSE" so we don't
+# have to consider other valid values later on.
+#
+USE_MERRA_CLIMO=$(boolify $USE_MERRA_CLIMO)
+# Force to "TRUE" in case of FV3_GFS_v15_thompson_mynn_lam3km:
+if [ "${CCPP_PHYS_SUITE}" = "FV3_GFS_v15_thompson_mynn_lam3km" ]; then
+  USE_MERRA_CLIMO="TRUE"
+fi
+#
+#-----------------------------------------------------------------------
+#
 # Make sure that FCST_MODEL is set to a valid value.
 #
 #-----------------------------------------------------------------------
@@ -709,9 +617,9 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-DATE_OR_NULL=$( printf "%s" "${DATE_FIRST_CYCL}" | \
-                sed -n -r -e "s/^([0-9]{8})$/\1/p" )
-if [ -z "${DATE_OR_NULL}" ]; then
+date_or_null=$( printf "%s" "${DATE_FIRST_CYCL}" | \
+                $SED -n -r -e "s/^([0-9]{8})$/\1/p" )
+if [ -z "${date_or_null}" ]; then
   print_err_msg_exit "\
 DATE_FIRST_CYCL must be a string consisting of exactly 8 digits of the 
 form \"YYYYMMDD\", where YYYY is the 4-digit year, MM is the 2-digit 
@@ -719,9 +627,9 @@ month, and DD is the 2-digit day-of-month.
   DATE_FIRST_CYCL = \"${DATE_FIRST_CYCL}\""
 fi
 
-DATE_OR_NULL=$( printf "%s" "${DATE_LAST_CYCL}" | \
-                sed -n -r -e "s/^([0-9]{8})$/\1/p" )
-if [ -z "${DATE_OR_NULL}" ]; then
+date_or_null=$( printf "%s" "${DATE_LAST_CYCL}" | \
+                $SED -n -r -e "s/^([0-9]{8})$/\1/p" )
+if [ -z "${date_or_null}" ]; then
   print_err_msg_exit "\
 DATE_LAST_CYCL must be a string consisting of exactly 8 digits of the 
 form \"YYYYMMDD\", where YYYY is the 4-digit year, MM is the 2-digit 
@@ -736,38 +644,71 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-CYCL_HRS_str=$(printf "\"%s\" " "${CYCL_HRS[@]}")
-CYCL_HRS_str="( $CYCL_HRS_str)"
+cycl_hrs_str=$(printf "\"%s\" " "${CYCL_HRS[@]}")
+cycl_hrs_str="( ${cycl_hrs_str})"
 
 i=0
-for CYCL in "${CYCL_HRS[@]}"; do
+for cycl_hr in "${CYCL_HRS[@]}"; do
 
-  CYCL_OR_NULL=$( printf "%s" "$CYCL" | sed -n -r -e "s/^([0-9]{2})$/\1/p" )
+  cycl_hr_or_null=$( printf "%s" "${cycl_hr}" | $SED -n -r -e "s/^([0-9]{2})$/\1/p" )
 
-  if [ -z "${CYCL_OR_NULL}" ]; then
+  if [ -z "${cycl_hr_or_null}" ]; then
     print_err_msg_exit "\
 Each element of CYCL_HRS must be a string consisting of exactly 2 digits
-(including a leading \"0\", if necessary) specifying an hour-of-day.  Ele-
-ment #$i of CYCL_HRS (where the index of the first element is 0) does not
-have this form:
-  CYCL_HRS = $CYCL_HRS_str
+(including a leading \"0\", if necessary) specifying an hour-of-day.  
+Element #$i of CYCL_HRS (where the index of the first element is 0) does 
+not have this form:
+  CYCL_HRS = ${cycl_hrs_str}
   CYCL_HRS[$i] = \"${CYCL_HRS[$i]}\""
   fi
 
-  if [ "${CYCL_OR_NULL}" -lt "0" ] || \
-     [ "${CYCL_OR_NULL}" -gt "23" ]; then
+  if [ "${cycl_hr_or_null}" -lt "0" ] || \
+     [ "${cycl_hr_or_null}" -gt "23" ]; then
     print_err_msg_exit "\
-Each element of CYCL_HRS must be an integer between \"00\" and \"23\", in-
-clusive (including a leading \"0\", if necessary), specifying an hour-of-
-day.  Element #$i of CYCL_HRS (where the index of the first element is 0) 
-does not have this form:
-  CYCL_HRS = $CYCL_HRS_str
+Each element of CYCL_HRS must be an integer between \"00\" and \"23\", 
+inclusive (including a leading \"0\", if necessary), specifying an hour-
+of-day.  Element #$i of CYCL_HRS (where the index of the first element 
+is 0) does not have this form:
+  CYCL_HRS = ${cycl_hrs_str}
   CYCL_HRS[$i] = \"${CYCL_HRS[$i]}\""
   fi
 
   i=$(( $i+1 ))
 
 done
+#
+#-----------------------------------------------------------------------
+# Check cycle increment for cycle frequency (cycl_freq).
+# only if INCR_CYCL_FREQ < 24.
+#-----------------------------------------------------------------------
+#
+if [ "${INCR_CYCL_FREQ}" -lt "24" ] && [ "$i" -gt "1" ]; then
+  cycl_intv="$(( 24/$i ))"
+  cycl_intv=( $( printf "%02d " "${cycl_intv}" ) )
+  INCR_CYCL_FREQ=( $( printf "%02d " "${INCR_CYCL_FREQ}" ) )
+  if [ "${cycl_intv}" -ne "${INCR_CYCL_FREQ}" ]; then
+    print_err_msg_exit "\
+The number of CYCL_HRS does not match with that expected by INCR_CYCL_FREQ:
+  INCR_CYCL_FREQ = ${INCR_CYCL_FREQ}
+  cycle interval by the number of CYCL_HRS = ${cycl_intv}
+  CYCL_HRS = ${cycl_hrs_str}"
+  fi
+
+  im1=$(( $i-1 ))
+  for itmp in $( seq 1 ${im1} ); do
+    itm1=$(( ${itmp}-1 ))
+    cycl_next_itmp="$(( ${CYCL_HRS[itm1]} + ${INCR_CYCL_FREQ} ))"
+    cycl_next_itmp=( $( printf "%02d " "${cycl_next_itmp}" ) )
+    if [ "${cycl_next_itmp}" -ne "${CYCL_HRS[$itmp]}" ]; then
+      print_err_msg_exit "\
+Element #${itmp} of CYCL_HRS does not match with the increment of cycle
+frequency INCR_CYCL_FREQ:
+  CYCL_HRS = ${cycl_hrs_str}
+  INCR_CYCL_FREQ = ${INCR_CYCL_FREQ}
+  CYCL_HRS[$itmp] = \"${CYCL_HRS[$itmp]}\""
+    fi
+  done
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -782,240 +723,19 @@ done
 set_cycle_dates \
   date_start="${DATE_FIRST_CYCL}" \
   date_end="${DATE_LAST_CYCL}" \
-  cycle_hrs="${CYCL_HRS_str}" \
+  cycle_hrs="${cycl_hrs_str}" \
+  incr_cycl_freq="${INCR_CYCL_FREQ}" \
   output_varname_all_cdates="ALL_CDATES"
 
 NUM_CYCLES="${#ALL_CDATES[@]}"
 
-if [ $NUM_CYCLES -gt 30 ] ; then
+if [ $NUM_CYCLES -gt 90 ] ; then
   unset ALL_CDATES
   print_info_msg "$VERBOSE" "
 Too many cycles in ALL_CDATES to list, redefining in abbreviated form."
 ALL_CDATES="${DATE_FIRST_CYCL}${CYCL_HRS[0]}...${DATE_LAST_CYCL}${CYCL_HRS[-1]}"
 fi
-#
-#-----------------------------------------------------------------------
-#
-# Set various directories.
-#
-# HOMErrfs:
-# Top directory of the clone of the FV3-LAM workflow git repository.
-#
-# USHDIR:
-# Directory containing the shell scripts called by the workflow.
-#
-# SCRIPTSDIR:
-# Directory containing the ex scripts called by the workflow.
-#
-# JOBSSDIR:
-# Directory containing the jjobs scripts called by the workflow.
-#
-# SORCDIR:
-# Directory containing various source codes.
-#
-# PARMDIR:
-# Directory containing parameter files, template files, etc.
-#
-# EXECDIR:
-# Directory containing various executable files.
-#
-# TEMPLATE_DIR:
-# Directory in which templates of various FV3-LAM input files are locat-
-# ed.
-#
-# UFS_WTHR_MDL_DIR:
-# Directory in which the (NEMS-enabled) FV3-LAM application is located.
-# This directory includes subdirectories for FV3, NEMS, and FMS.
-#
-#-----------------------------------------------------------------------
-#
 
-#
-# The current script should be located in the ush subdirectory of the 
-# workflow directory.  Thus, the workflow directory is the one above the
-# directory of the current script.  Get the path to this latter directo-
-# ry and save it in HOMErrfs.
-#
-SR_WX_APP_TOP_DIR=${scrfunc_dir%/*/*}
-# GSK to do:  Get HOMErrfs from Externals.cfg 
-HOMErrfs="${SR_WX_APP_TOP_DIR}/regional_workflow"
-
-USHDIR="$HOMErrfs/ush"
-SCRIPTSDIR="$HOMErrfs/scripts"
-JOBSDIR="$HOMErrfs/jobs"
-SORCDIR="$HOMErrfs/sorc"
-SRC_DIR="${SR_WX_APP_TOP_DIR}/src"
-PARMDIR="$HOMErrfs/parm"
-MODULES_DIR="$HOMErrfs/modulefiles"
-EXECDIR="${SR_WX_APP_TOP_DIR}/bin"
-TEMPLATE_DIR="$USHDIR/templates"
-VX_CONFIG_DIR="$TEMPLATE_DIR/parm"
-METPLUS_CONF="$TEMPLATE_DIR/parm/metplus"
-MET_CONFIG="$TEMPLATE_DIR/parm/met"
-
-case "$MACHINE" in
-
-  "WCOSS_CRAY")
-    FIXgsm=${FIXgsm:-"/gpfs/hps3/emc/global/noscrub/emc.glopara/git/fv3gfs/fix/fix_am"}
-    TOPO_DIR=${TOPO_DIR:-"/gpfs/hps3/emc/global/noscrub/emc.glopara/git/fv3gfs/fix/fix_orog"}
-    SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/gpfs/hps3/emc/global/noscrub/emc.glopara/git/fv3gfs/fix/fix_sfc_climo"}
-    FIXLAM_NCO_BASEDIR=${FIXLAM_NCO_BASEDIR:-"/needs/to/be/specified"}
-    ;;
-
-  "WCOSS_DELL_P3")
-    FIXgsm=${FIXgsm:-"/gpfs/dell2/emc/modeling/noscrub/emc.glopara/git/fv3gfs/fix/fix_am"}
-    TOPO_DIR=${TOPO_DIR:-"/gpfs/dell2/emc/modeling/noscrub/emc.glopara/git/fv3gfs/fix/fix_orog"}
-    SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/gpfs/dell2/emc/modeling/noscrub/emc.glopara/git/fv3gfs/fix/fix_sfc_climo"}
-    FIXLAM_NCO_BASEDIR=${FIXLAM_NCO_BASEDIR:-"/needs/to/be/specified"}
-    ;;
-
-  "HERA")
-    FIXgsm=${FIXgsm:-"/scratch1/NCEPDEV/global/glopara/fix/fix_am"}
-    TOPO_DIR=${TOPO_DIR:-"/scratch1/NCEPDEV/global/glopara/fix/fix_orog"}
-    SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/scratch1/NCEPDEV/global/glopara/fix/fix_sfc_climo"}
-    FIXLAM_NCO_BASEDIR=${FIXLAM_NCO_BASEDIR:-"/scratch2/BMC/det/FV3LAM_pregen"}
-    ;;
-
-  "ORION")
-    FIXgsm=${FIXgsm:-"/work/noaa/global/glopara/fix/fix_am"}
-    TOPO_DIR=${TOPO_DIR:-"/work/noaa/global/glopara/fix/fix_orog"}
-    SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/work/noaa/global/glopara/fix/fix_sfc_climo"}
-    FIXLAM_NCO_BASEDIR=${FIXLAM_NCO_BASEDIR:-"/needs/to/be/specified"}
-    ;;
-
-  "JET")
-    FIXgsm=${FIXgsm:-"/lfs4/HFIP/hfv3gfs/glopara/git/fv3gfs/fix/fix_am"}
-    TOPO_DIR=${TOPO_DIR:-"/lfs4/HFIP/hfv3gfs/glopara/git/fv3gfs/fix/fix_orog"}
-    SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/lfs4/HFIP/hfv3gfs/glopara/git/fv3gfs/fix/fix_sfc_climo"}
-    FIXLAM_NCO_BASEDIR=${FIXLAM_NCO_BASEDIR:-"/needs/to/be/specified"}
-    ;;
-
-  "ODIN")
-    FIXgsm=${FIXgsm:-"/scratch/ywang/fix/theia_fix/fix_am"}
-    TOPO_DIR=${TOPO_DIR:-"/scratch/ywang/fix/theia_fix/fix_orog"}
-    SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/scratch/ywang/fix/climo_fields_netcdf"}
-    FIXLAM_NCO_BASEDIR=${FIXLAM_NCO_BASEDIR:-"/needs/to/be/specified"}
-    ;;
-
-  "CHEYENNE")
-    FIXgsm=${FIXgsm:-"/glade/p/ral/jntp/UFS_CAM/fix/fix_am"}
-    TOPO_DIR=${TOPO_DIR:-"/glade/p/ral/jntp/UFS_CAM/fix/fix_orog"}
-    SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/glade/p/ral/jntp/UFS_CAM/fix/climo_fields_netcdf"}
-    FIXLAM_NCO_BASEDIR=${FIXLAM_NCO_BASEDIR:-"/needs/to/be/specified"}
-    ;;
-
-  "STAMPEDE")
-    FIXgsm=${FIXgsm:-"/work/00315/tg455890/stampede2/regional_fv3/fix_am"}
-    TOPO_DIR=${TOPO_DIR:-"/work/00315/tg455890/stampede2/regional_fv3/fix_orog"}
-    SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/work/00315/tg455890/stampede2/regional_fv3/climo_fields_netcdf"}
-    FIXLAM_NCO_BASEDIR=${FIXLAM_NCO_BASEDIR:-"/needs/to/be/specified"}
-    ;;
-
-  *)
-    print_err_msg_exit "\
-One or more fix file directories have not been specified for this machine:
-  MACHINE = \"$MACHINE\"
-  FIXgsm = \"${FIXgsm:-\"\"}
-  TOPO_DIR = \"${TOPO_DIR:-\"\"}
-  SFC_CLIMO_INPUT_DIR = \"${SFC_CLIMO_INPUT_DIR:-\"\"}
-  FIXLAM_NCO_BASEDIR = \"${FIXLAM_NCO_BASEDIR:-\"\"}
-You can specify the missing location(s) in config.sh"
-    ;;
-
-esac
-#
-#-----------------------------------------------------------------------
-#
-# Set the base directories in which codes obtained from external reposi-
-# tories (using the manage_externals tool) are placed.  Obtain the rela-
-# tive paths to these directories by reading them in from the manage_ex-
-# ternals configuration file.  (Note that these are relative to the lo-
-# cation of the configuration file.)  Then form the full paths to these
-# directories.  Finally, make sure that each of these directories actu-
-# ally exists.
-#
-#-----------------------------------------------------------------------
-#
-mng_extrns_cfg_fn=$( readlink -f "${SR_WX_APP_TOP_DIR}/Externals.cfg" )
-property_name="local_path"
-#
-# Get the base directory of the FV3 forecast model code.
-#
-external_name="${FCST_MODEL}"
-UFS_WTHR_MDL_DIR=$( \
-get_manage_externals_config_property \
-"${mng_extrns_cfg_fn}" "${external_name}" "${property_name}" ) || \
-print_err_msg_exit "\
-Call to function get_manage_externals_config_property failed."
-
-UFS_WTHR_MDL_DIR="${SR_WX_APP_TOP_DIR}/${UFS_WTHR_MDL_DIR}"
-if [ ! -d "${UFS_WTHR_MDL_DIR}" ]; then
-  print_err_msg_exit "\
-The base directory in which the FV3 source code should be located
-(UFS_WTHR_MDL_DIR) does not exist:
-  UFS_WTHR_MDL_DIR = \"${UFS_WTHR_MDL_DIR}\"
-Please clone the external repository containing the code in this directory,
-build the executable, and then rerun the workflow."
-fi
-#
-# Get the base directory of the UFS_UTILS codes.
-#
-external_name="ufs_utils"
-UFS_UTILS_DIR=$( \
-get_manage_externals_config_property \
-"${mng_extrns_cfg_fn}" "${external_name}" "${property_name}" ) || \
-print_err_msg_exit "\
-Call to function get_manage_externals_config_property failed."
-
-UFS_UTILS_DIR="${SR_WX_APP_TOP_DIR}/${UFS_UTILS_DIR}"
-if [ ! -d "${UFS_UTILS_DIR}" ]; then
-  print_err_msg_exit "\
-The base directory in which the UFS utilities source codes should be lo-
-cated (UFS_UTILS_DIR) does not exist:
-  UFS_UTILS_DIR = \"${UFS_UTILS_DIR}\"
-Please clone the external repository containing the code in this direct-
-ory, build the executables, and then rerun the workflow."
-fi
-#
-# Get the base directory of the UPP code.
-#
-external_name="UPP"
-UPP_DIR=$( \
-get_manage_externals_config_property \
-"${mng_extrns_cfg_fn}" "${external_name}" "${property_name}" ) || \
-print_err_msg_exit "\
-Call to function get_manage_externals_config_property failed."
-
-UPP_DIR="${SR_WX_APP_TOP_DIR}/${UPP_DIR}"
-if [ ! -d "${UPP_DIR}" ]; then
-  print_err_msg_exit "\
-The base directory in which the UPP source code should be located
-(UPP_DIR) does not exist:
-  UPP_DIR = \"${UPP_DIR}\"
-Please clone the external repository containing the code in this directory,
-build the executable, and then rerun the workflow."
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that USE_CUSTOM_POST_CONFIG_FILE is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
-check_var_valid_value \
-  "USE_CUSTOM_POST_CONFIG_FILE" "valid_vals_USE_CUSTOM_POST_CONFIG_FILE"
-#
-# Set USE_CUSTOM_POST_CONFIG_FILE to either "TRUE" or "FALSE" so we don't
-# have to consider other valid values later on.
-#
-USE_CUSTOM_POST_CONFIG_FILE=${USE_CUSTOM_POST_CONFIG_FILE^^}
-if [ "$USE_CUSTOM_POST_CONFIG_FILE" = "TRUE" ] || \
-   [ "$USE_CUSTOM_POST_CONFIG_FILE" = "YES" ]; then
-  USE_CUSTOM_POST_CONFIG_FILE="TRUE"
-elif [ "$USE_CUSTOM_POST_CONFIG_FILE" = "FALSE" ] || \
-     [ "$USE_CUSTOM_POST_CONFIG_FILE" = "NO" ]; then
-  USE_CUSTOM_POST_CONFIG_FILE="FALSE"
-fi
 #
 #-----------------------------------------------------------------------
 #
@@ -1181,7 +901,7 @@ if [ "${SUB_HOURLY_POST}" = "TRUE" ]; then
 # digits.
 #
   mnts_or_null=$( printf "%s" "${DT_SUBHOURLY_POST_MNTS}" | \
-                  sed -n -r -e "s/^([0-9])([0-9])?$/\1\2/p" )
+                  $SED -n -r -e "s/^([0-9])([0-9])?$/\1\2/p" )
   if [ -z "${mnts_or_null}" ]; then
     print_err_msg_exit "\
 When performing sub-hourly post (i.e. SUB_HOURLY_POST set to \"TRUE\"), 
@@ -1241,7 +961,7 @@ must set DT_SUBHOURLY_POST_MNTS to something other than zero."
 #
 # For now, the sub-hourly capability is restricted to having values of 
 # DT_SUBHOURLY_POST_MNTS that evenly divide into 60 minutes.  This is 
-# because the jinja rocoto XML template (FV3LAM_wflow.xml) assumes that
+# because the jinja rocoto XML template (${WFLOW_XML_FN}) assumes that
 # model output is generated at the top of every hour (i.e. at 00 minutes).
 # This restricts DT_SUBHOURLY_POST_MNTS to the following values (inluding
 # both cases with and without a leading 0):
@@ -1275,7 +995,7 @@ fi
 if [ "${EXPT_BASEDIR:0:1}" != "/" ]; then
   EXPT_BASEDIR="${SR_WX_APP_TOP_DIR}/../expt_dirs/${EXPT_BASEDIR}"
 fi
-EXPT_BASEDIR="$( readlink -m ${EXPT_BASEDIR} )"
+EXPT_BASEDIR="$( $READLINK -m ${EXPT_BASEDIR} )"
 mkdir_vrfy -p "${EXPT_BASEDIR}"
 #
 #-----------------------------------------------------------------------
@@ -1315,6 +1035,10 @@ check_for_preexist_dir_file "$EXPTDIR" "${PREEXISTING_DIR_METHOD}"
 # the fixed files containing various fields on global grids (which are
 # usually much coarser than the native FV3-LAM grid).
 #
+# FIXclim:
+# This is the directory that will contain the MERRA2 aerosol climatology 
+# data file and lookup tables for optics properties
+#
 # FIXLAM:
 # This is the directory that will contain the fixed files or symlinks to
 # the fixed files containing the grid, orography, and surface climatology
@@ -1349,6 +1073,7 @@ check_for_preexist_dir_file "$EXPTDIR" "${PREEXISTING_DIR_METHOD}"
 LOGDIR="${EXPTDIR}/log"
 
 FIXam="${EXPTDIR}/fix_am"
+FIXclim="${EXPTDIR}/fix_clim"
 FIXLAM="${EXPTDIR}/fix_lam"
 
 if [ "${RUN_ENVIR}" = "nco" ]; then
@@ -1369,8 +1094,8 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-# The FV3 forecast model needs the following input files in the run di-
-# rectory to start a forecast:
+# The FV3 forecast model needs the following input files in the run 
+# directory to start a forecast:
 #
 #   (1) The data table file
 #   (2) The diagnostics table file
@@ -1378,27 +1103,22 @@ fi
 #   (4) The FV3 namelist file
 #   (5) The model configuration file
 #   (6) The NEMS configuration file
-#
-# If using CCPP, it also needs:
-#
 #   (7) The CCPP physics suite definition file
 #
 # The workflow contains templates for the first six of these files.  
 # Template files are versions of these files that contain placeholder
-# (i.e. dummy) values for various parameters.  The experiment/workflow 
-# generation scripts copy these templates to appropriate locations in 
-# the experiment directory (either the top of the experiment directory
-# or one of the cycle subdirectories) and replace the placeholders in
-# these copies by actual values specified in the experiment/workflow 
-# configuration file (or derived from such values).  The scripts then
-# use the resulting "actual" files as inputs to the forecast model.
+# (i.e. dummy) values for various parameters.  The experiment generation
+# and/or the forecast task (i.e. J-job) scripts copy these templates to 
+# appropriate locations in the experiment directory (e.g. to the top of 
+# the experiment directory, to one of the cycle subdirectories, etc) and 
+# replace the placeholders with actual values to obtain the files that 
+# are used as inputs to the forecast model.
 #
-# Note that the CCPP physics suite defintion file does not have a cor-
-# responding template file because it does not contain any values that
-# need to be replaced according to the experiment/workflow configura-
-# tion.  If using CCPP, this file simply needs to be copied over from 
-# its location in the forecast model's directory structure to the ex-
-# periment directory.
+# Note that the CCPP physics suite defintion file (SDF) does not have a 
+# corresponding template file because it does not contain any values 
+# that need to be replaced according to the experiment configuration.  
+# This file simply needs to be copied over from its location in the 
+# forecast model's directory structure to the experiment directory.
 #
 # Below, we first set the names of the templates for the first six files
 # listed above.  We then set the full paths to these template files.  
@@ -1522,24 +1242,11 @@ FIELD_TABLE_FP="${EXPTDIR}/${FIELD_TABLE_FN}"
 FV3_NML_FN="${FV3_NML_BASE_SUITE_FN%.*}"
 FV3_NML_FP="${EXPTDIR}/${FV3_NML_FN}"
 NEMS_CONFIG_FP="${EXPTDIR}/${NEMS_CONFIG_FN}"
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that USE_USER_STAGED_EXTRN_FILES is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+
+
 check_var_valid_value "USE_USER_STAGED_EXTRN_FILES" "valid_vals_USE_USER_STAGED_EXTRN_FILES"
-#
-# Set USE_USER_STAGED_EXTRN_FILES to either "TRUE" or "FALSE" so we don't 
-# have to consider other valid values later on.
-#
-USE_USER_STAGED_EXTRN_FILES=${USE_USER_STAGED_EXTRN_FILES^^}
-if [ "${USE_USER_STAGED_EXTRN_FILES}" = "YES" ]; then
-  USE_USER_STAGED_EXTRN_FILES="TRUE"
-elif [ "${USE_USER_STAGED_EXTRN_FILES}" = "NO" ]; then
-  USE_USER_STAGED_EXTRN_FILES="FALSE"
-fi
+USE_USER_STAGED_EXTRN_FILES=$(boolify $USE_USER_STAGED_EXTRN_FILES)
+
 #
 #-----------------------------------------------------------------------
 #
@@ -1577,18 +1284,7 @@ fi
 #-----------------------------------------------------------------------
 #
 check_var_valid_value "DO_ENSEMBLE" "valid_vals_DO_ENSEMBLE"
-#
-# Set DO_ENSEMBLE to either "TRUE" or "FALSE" so we don't have to consider
-# other valid values later on.
-#
-DO_ENSEMBLE=${DO_ENSEMBLE^^}
-if [ "$DO_ENSEMBLE" = "TRUE" ] || \
-   [ "$DO_ENSEMBLE" = "YES" ]; then
-  DO_ENSEMBLE="TRUE"
-elif [ "$DO_ENSEMBLE" = "FALSE" ] || \
-     [ "$DO_ENSEMBLE" = "NO" ]; then
-  DO_ENSEMBLE="FALSE"
-fi
+DO_ENSEMBLE=$(boolify $DO_ENSEMBLE)
 
 NDIGITS_ENSMEM_NAMES="0"
 ENSMEM_NAMES=("")
@@ -1723,7 +1419,6 @@ Reset values are:
     msg="
 When RUN_ENVIR is set to \"nco\", the workflow assumes that pregenerated
 orography files already exist in the directory 
-
   \${FIXLAM_NCO_BASEDIR}/\${PREDEF_GRID_NAME}
 
 where
@@ -1834,6 +1529,25 @@ Reset value is:"
 
   fi
 
+  if [ "${RUN_TASK_VX_ENSGRID}" = "TRUE" ] || \
+     [ "${RUN_TASK_VX_ENSGRID}" = "FALSE" ]; then
+
+    msg="
+When RUN_ENVIR is set to \"nco\", it is assumed that the verification
+will not be run.
+  RUN_TASK_VX_ENSGRID = \"${RUN_TASK_VX_ENSGRID}\"
+Resetting RUN_TASK_VX_ENSGRID to \"FALSE\" 
+Reset value is:"
+
+    RUN_TASK_VX_ENSGRID="FALSE"
+
+    msg="$msg""
+  RUN_TASK_VX_ENSGRID = \"${RUN_TASK_VX_ENSGRID}\"
+"
+
+    print_info_msg "$msg"
+
+  fi
 #
 #-----------------------------------------------------------------------
 #
@@ -1957,7 +1671,6 @@ fi
 #-----------------------------------------------------------------------
 #
 . ./set_extrn_mdl_params.sh
-
 #
 #-----------------------------------------------------------------------
 #
@@ -2063,12 +1776,14 @@ fi
 #-----------------------------------------------------------------------
 #
 # Create a new experiment directory.  Note that at this point we are 
-# guaranteed that there is no preexisting experiment directory.
+# guaranteed that there is no preexisting experiment directory. For
+# platforms with no workflow manager, we need to create LOGDIR as well,
+# since it won't be created later at runtime.
 #
 #-----------------------------------------------------------------------
 #
 mkdir_vrfy -p "$EXPTDIR"
-
+mkdir_vrfy -p "$LOGDIR"
 #
 #-----------------------------------------------------------------------
 #
@@ -2195,10 +1910,9 @@ check_var_valid_value "WRITE_DOPOST" "valid_vals_WRITE_DOPOST"
 # Set WRITE_DOPOST to either "TRUE" or "FALSE" so we don't have to consider
 # other valid values later on.
 #
-WRITE_DOPOST=${WRITE_DOPOST^^}
-if [ "$WRITE_DOPOST" = "TRUE" ] || \
-   [ "$WRITE_DOPOST" = "YES" ]; then
-  WRITE_DOPOST="TRUE"
+WRITE_DOPOST=$(boolify $WRITE_DOPOST)
+
+if [ "$WRITE_DOPOST" = "TRUE" ] ; then
 
 # Turn off run_post
   RUN_TASK_RUN_POST="FALSE"
@@ -2208,51 +1922,15 @@ if [ "$WRITE_DOPOST" = "TRUE" ] || \
     print_err_msg_exit "\
 SUB_HOURLY_POST is NOT available with Inline Post yet."
   fi
+fi
 
-elif [ "$WRITE_DOPOST" = "FALSE" ] || \
-     [ "$WRITE_DOPOST" = "NO" ]; then
-  WRITE_DOPOST="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that QUILTING is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+
 check_var_valid_value "QUILTING" "valid_vals_QUILTING"
-#
-# Set QUILTING to either "TRUE" or "FALSE" so we don't have to consider
-# other valid values later on.
-#
-QUILTING=${QUILTING^^}
-if [ "$QUILTING" = "TRUE" ] || \
-   [ "$QUILTING" = "YES" ]; then
-  QUILTING="TRUE"
-elif [ "$QUILTING" = "FALSE" ] || \
-     [ "$QUILTING" = "NO" ]; then
-  QUILTING="FALSE"
-fi
-#
-#-----------------------------------------------------------------------
-#
-# Make sure that PRINT_ESMF is set to a valid value.
-#
-#-----------------------------------------------------------------------
-#
+QUILTING=$(boolify $QUILTING)
+
 check_var_valid_value "PRINT_ESMF" "valid_vals_PRINT_ESMF"
-#
-# Set PRINT_ESMF to either "TRUE" or "FALSE" so we don't have to consider
-# other valid values later on.
-#
-PRINT_ESMF=${PRINT_ESMF^^}
-if [ "${PRINT_ESMF}" = "TRUE" ] || \
-   [ "${PRINT_ESMF}" = "YES" ]; then
-  PRINT_ESMF="TRUE"
-elif [ "${PRINT_ESMF}" = "FALSE" ] || \
-     [ "${PRINT_ESMF}" = "NO" ]; then
-  PRINT_ESMF="FALSE"
-fi
+PRINT_ESMF=$(boolify $PRINT_ESMF)
+
 #
 #-----------------------------------------------------------------------
 #
@@ -2310,7 +1988,6 @@ fi
 #-----------------------------------------------------------------------
 #
 NNODES_RUN_FCST=$(( (PE_MEMBER01 + PPN_RUN_FCST - 1)/PPN_RUN_FCST ))
-
 #
 #-----------------------------------------------------------------------
 #
@@ -2358,171 +2035,107 @@ set_thompson_mp_fix_files \
 #
 #-----------------------------------------------------------------------
 #
-# Generate the shell script that will appear in the experiment directory
-# (EXPTDIR) and will contain definitions of variables needed by the va-
-# rious scripts in the workflow.  We refer to this as the experiment/
-# workflow global variable definitions file.  We will create this file
-# by:
-#
-# 1) Copying the default workflow/experiment configuration file (speci-
-#    fied by EXPT_DEFAULT_CONFIG_FN and located in the shell script di-
-#    rectory specified by USHDIR) to the experiment directory and rena-
-#    ming it to the name specified by GLOBAL_VAR_DEFNS_FN.
-#
-# 2) Resetting the default variable values in this file to their current
-#    values.  This is necessary because these variables may have been 
-#    reset by the user-specified configuration file (if one exists in 
-#    USHDIR) and/or by this setup script, e.g. because predef_domain is
-#    set to a valid non-empty value.
-#
-# 3) Appending to the variable definitions file any new variables intro-
-#    duced in this setup script that may be needed by the scripts that
-#    perform the various tasks in the workflow (and which source the va-
-#    riable defintions file).
-#
-# First, set the full path to the variable definitions file and copy the
-# default configuration script into it.
+# Set the full path to the experiment's variable definitions file.  This 
+# file will contain definitions of variables (in bash syntax) needed by 
+# the various scripts in the workflow.
 #
 #-----------------------------------------------------------------------
 #
-GLOBAL_VAR_DEFNS_FP="$EXPTDIR/$GLOBAL_VAR_DEFNS_FN"
-cp_vrfy $USHDIR/${EXPT_DEFAULT_CONFIG_FN} ${GLOBAL_VAR_DEFNS_FP}
+GLOBAL_VAR_DEFNS_FP="$EXPTDIR/${GLOBAL_VAR_DEFNS_FN}"
 #
 #-----------------------------------------------------------------------
 #
-#
+# Get the list of primary experiment variables and their default values 
+# from the default experiment configuration file (EXPT_DEFAULT_CONFIG_FN).  
+# By "primary", we mean those variables that are defined in the default 
+# configuration file and can be reset in the user-specified experiment
+# configuration file (EXPT_CONFIG_FN).  The default values will be updated 
+# below to user-specified ones and the result saved in the experiment's 
+# variable definitions file.
 #
 #-----------------------------------------------------------------------
-#
 
-# Read all lines of GLOBAL_VAR_DEFNS file into the variable line_list.
-line_list=$( sed -r -e "s/(.*)/\1/g" ${GLOBAL_VAR_DEFNS_FP} )
 #
-# Loop through the lines in line_list and concatenate lines ending with
-# the line bash continuation character "\".
-#
-rm_vrfy ${GLOBAL_VAR_DEFNS_FP}
-while read crnt_line; do
-  printf "%s\n" "${crnt_line}" >> ${GLOBAL_VAR_DEFNS_FP}
-done <<< "${line_list}"
-#
-#-----------------------------------------------------------------------
-#
-# The following comment block needs to be updated because now line_list
-# may contain lines that are not assignment statements (e.g. it may con-
-# tain if-statements).  Such lines are ignored in the while-loop below.
-#
-# Reset each of the variables in the variable definitions file to its 
-# value in the current environment.  To accomplish this, we:
-#
-# 1) Create a list of variable settings by stripping out comments, blank
-#    lines, extraneous leading whitespace, etc from the variable defini-
-#    tions file (which is currently identical to the default workflow/
-#    experiment configuration script) and saving the result in the vari-
-#    able line_list.  Each line of line_list will have the form
-#
-#      VAR=...
-#
-#    where the VAR is a variable name and ... is the value from the de-
-#    fault configuration script (which does not necessarily correspond
-#    to the current value of the variable).
-#
-# 2) Loop through each line of line_list.  For each line, we extract the
-#    variable name (and save it in the variable var_name), get its value
-#    from the current environment (using bash indirection, i.e. 
-#    ${!var_name}), and use the set_file_param() function to replace the
-#    value of the variable in the variable definitions script (denoted 
-#    above by ...) with its current value. 
-#
-#-----------------------------------------------------------------------
-#
-# Also should remove trailing whitespace...
-line_list=$( sed -r \
-             -e "s/^([ ]*)([^ ]+.*)/\2/g" \
-             -e "/^#.*/d" \
-             -e "/^$/d" \
-             ${GLOBAL_VAR_DEFNS_FP} )
+print_info_msg "
+Creating list of default experiment variable definitions..." 
 
-print_info_msg "$VERBOSE" "
-The variable \"line_list\" contains:
+get_bash_file_contents fp="$USHDIR/${EXPT_DEFAULT_CONFIG_FN}" \
+                       output_varname_contents="default_var_defns"
 
-${line_list}
+print_info_msg "$DEBUG" "
+The variable \"default_var_defns\" containing default values of primary 
+experiment variables is set as follows:
+
+${default_var_defns}
 "
 #
 #-----------------------------------------------------------------------
 #
-# Add a comment at the beginning of the variable definitions file that
-# indicates that the first section of that file is (mostly) the same as
-# the configuration file.
+# Create a list of primary experiment variable definitions containing 
+# updated values.  By "updated", we mean non-default values.  Values
+# may have been updated due to the presence of user-specified values in 
+# the experiment configuration file (EXPT_CONFIG_FN) or due to other 
+# considerations (e.g. resetting depending on the platform the App is 
+# running on).
 #
 #-----------------------------------------------------------------------
 #
-read -r -d '' str_to_insert << EOM
+print_info_msg "
+Creating lists of (updated) experiment variable definitions..." 
 #
-#-----------------------------------------------------------------------
-#-----------------------------------------------------------------------
-# Section 1:
-# This section is a copy of the default workflow/experiment configura-
-# tion file config_defaults.sh in the shell scripts directory USHDIR ex-
-# cept that variable values have been updated to those set by the setup
-# script (setup.sh).
-#-----------------------------------------------------------------------
-#-----------------------------------------------------------------------
+# Set the flag that specifies whether or not array variables will be
+# recorded in the variable definitions file on one line or one element 
+# per line.  Then, if writing arrays one element per line (i.e. multiline), 
+# set an escaped-newline character that needs to be included after every 
+# element of each array as the newline character in order for sed to 
+# write the line properly.
 #
-EOM
+multiline_arrays="TRUE"
+#multiline_arrays="FALSE"
+escbksl_nl_or_null=""
+if [ "${multiline_arrays}" = "TRUE" ]; then
+  escbksl_nl_or_null='\\\n'
+fi
 #
-# Replace all occurrences of actual newlines in the variable str_to_insert
-# with escaped backslash-n.  This is needed for the sed command below to
-# work properly (i.e. to avoid it failing with an "unterminated `s' command"
-# message).
+# Loop through the lines in default_var_defns.  Reset the value of the
+# variable on each line to the updated value (e.g. to a user-specified 
+# value, as opposed to the default value).  The updated list of variables 
+# and values will be saved in var_defns.
 #
-str_to_insert=${str_to_insert//$'\n'/\\n}
-#
-# Insert str_to_insert into GLOBAL_VAR_DEFNS_FP right after the line
-# containing the name of the interpreter (i.e. the line that starts with
-# the string "#!", e.g. "#!/bin/bash").
-#
-regexp="(^#!.*)"
-sed -i -r -e "s|$regexp|\1\n\n${str_to_insert}\n|g" ${GLOBAL_VAR_DEFNS_FP}
-#
-# Loop through the lines in line_list.
-#
+var_defns=""
 while read crnt_line; do
 #
 # Try to obtain the name of the variable being set on the current line.
-# This will be successful only if the line consists of one or more char-
-# acters representing the name of a variable (recall that in generating
-# the variable line_list, all leading spaces in the lines in the file 
-# have been stripped out), followed by an equal sign, followed by zero
-# or more characters representing the value that the variable is being
-# set to.
+# This will be successful only if the line consists of one or more non-
+# whitespace characters representing the name of a variable followed by
+# an equal sign, followed by zero or more characters representing the 
+# value that the variable is being set to.  (Recall that in generating
+# the variable default_var_defns, leading spaces on each line were 
+# stripped out).
 #
-  var_name=$( printf "%s" "${crnt_line}" | sed -n -r -e "s/^([^ ]*)=.*/\1/p" )
-#echo
-#echo "============================"
-#printf "%s\n" "var_name = \"${var_name}\""
+  var_name=$( printf "%s" "${crnt_line}" | $SED -n -r -e "s/^([^ ]*)=.*/\1/p" )
 #
-# If var_name is not empty, then a variable name was found in the cur-
-# rent line in line_list.
+# If var_name is not empty, then a variable name was found on the current 
+# line in default_var_defns.
 #
-  if [ ! -z $var_name ]; then
+  if [ ! -z ${var_name} ]; then
 
-    print_info_msg "$VERBOSE" "
+    print_info_msg "$DEBUG" "
 var_name = \"${var_name}\""
 #
-# If the variable specified in var_name is set in the current environ-
-# ment (to either an empty or non-empty string), get its value and in-
-# sert it in the variable definitions file on the line where that varia-
-# ble is defined.  Note that 
+# If the variable specified in var_name is set in the current environment 
+# (to either an empty or non-empty string), get its value and save it in
+# var_value.  Note that 
 #
 #   ${!var_name+x}
 #
 # will retrun the string "x" if the variable specified in var_name is 
 # set (to either an empty or non-empty string), and it will return an
-# empty string if the variable specified in var_name is unset (i.e. un-
-# defined).
+# empty string if the variable specified in var_name is unset (i.e. if
+# it is undefined).
 #
-    if [ ! -z ${!var_name+x} ]; then
+    unset "var_value"
+    if [ ! -z "${!var_name+x}" ]; then
 #
 # The variable may be a scalar or an array.  Thus, we first treat it as
 # an array and obtain the number of elements that it contains.
@@ -2531,111 +2144,134 @@ var_name = \"${var_name}\""
       array=("${!array_name_at}")
       num_elems="${#array[@]}"
 #
-# We will now set the variable var_value to the string that needs to be
-# placed on the right-hand side of the assignment operator (=) on the 
-# appropriate line in variable definitions file.  How this is done de-
-# pends on whether the variable is a scalar or an array.
+# Set var_value to the updated value of the current experiment variable.  
+# How this is done depends on whether the variable is a scalar or an 
+# array.
 #
 # If the variable contains only one element, then it is a scalar.  (It
-# could be a 1-element array, but it is simpler to treat it as a sca-
-# lar.)  In this case, we enclose its value in double quotes and save
-# the result in var_value.
+# could be a 1-element array, but for simplicity, we treat that case as
+# a scalar.)  In this case, we enclose its value in single quotes and
+# save the result in var_value. No variable expansion should be
+# happening from variables saved in the var_defns file.
 #
-      if [ "$num_elems" -eq 1 ]; then
+      if [ "${num_elems}" -eq 1 ]; then
+
         var_value="${!var_name}"
-        var_value="\"${var_value}\""
+        rhs="'${var_value}'"
 #
 # If the variable contains more than one element, then it is an array.
 # In this case, we build var_value in two steps as follows:
 #
 # 1) Generate a string containing each element of the array in double
-#    quotes and followed by a space.
+#    quotes and followed by a space (and followed by an optional backslash
+#    and newline if multiline_arrays has been set to "TRUE").
 #
 # 2) Place parentheses around the double-quoted list of array elements
 #    generated in the first step.  Note that there is no need to put a
-#    space before the closing parenthesis because in step 1, we have al-
-#    ready placed a space after the last element.
+#    space before the closing parenthesis because during step 1 above,
+#    a space has already been placed after the last array element.
 #
       else
 
-        arrays_on_one_line="TRUE"
-        arrays_on_one_line="FALSE"
-
-        if [ "${arrays_on_one_line}" = "TRUE" ]; then
-          var_value=$(printf "\"%s\" " "${!array_name_at}")
-#          var_value=$(printf "\"%s\" \\\\\\ \\\n" "${!array_name_at}")
-        else
-#          var_value=$(printf "%s" "\\\\\\n")
-          var_value="\\\\\n"
-          for (( i=0; i<${num_elems}; i++ )); do
-#            var_value=$(printf "%s\"%s\" %s" "${var_value}" "${array[$i]}" "\\\\\\n")
-            var_value="${var_value}\"${array[$i]}\" \\\\\n"
-#            var_value="${var_value}\"${array[$i]}\" "
-          done
-        fi
-        var_value="( $var_value)"
+        var_value=""
+        printf -v "var_value" "${escbksl_nl_or_null}"
+        for (( i=0; i<${num_elems}; i++ )); do
+          printf -v "var_value" "${var_value}\"${array[$i]}\" ${escbksl_nl_or_null}"
+        done
+        rhs="( ${var_value})"
 
       fi
 #
-# If the variable specified in var_name is not set in the current envi-
-# ronment (to either an empty or non-empty string), get its value and 
-# insert it in the variable definitions file on the line where that va-
-# riable is defined.
+# If for some reason the variable specified in var_name is not set in 
+# the current environment (to either an empty or non-empty string), below
+# we will still include it in the variable definitions file and simply 
+# set it to a null string.  Thus, here, we set its value (var_value) to 
+# an empty string).  In this case, we also issue an informational message.
 #
     else
 
       print_info_msg "
-The variable specified by \"var_name\" is not set in the current envi-
-ronment:
+The variable specified by \"var_name\" is not set in the current environment:
   var_name = \"${var_name}\"
 Setting its value in the variable definitions file to an empty string."
 
-      var_value="\"\""
+      rhs="''"
 
     fi
 #
-# Now place var_value on the right-hand side of the assignment statement
-# on the appropriate line in variable definitions file.
+# Set the line containing the variable's definition.  Then add the line
+# to the list of all variable definitions.
 #
-    set_file_param "${GLOBAL_VAR_DEFNS_FP}" "${var_name}" "${var_value}"
+    var_defn="${var_name}=$rhs"
+    printf -v "var_defns" "${var_defns}${var_defn}\n"
 #
-# If var_name is empty, then a variable name was not found in the cur-
-# rent line in line_list.  In this case, print out a warning and move on
-# to the next line.
+# If var_name is empty, then a variable name was not found on the current 
+# line in default_var_defns.  In this case, print out a warning and move 
+# on to the next line.
 #
   else
 
     print_info_msg "
-Could not extract a variable name from the current line in \"line_list\"
+Could not extract a variable name from the current line in \"default_var_defns\"
 (probably because it does not contain an equal sign with no spaces on 
 either side):
   crnt_line = \"${crnt_line}\"
   var_name = \"${var_name}\"
-Continuing to next line in \"line_list\"."
+Continuing to next line in \"default_var_defns\"."
 
   fi
 
-done <<< "${line_list}"
+done <<< "${default_var_defns}"
 #
 #-----------------------------------------------------------------------
 #
-# Append additional variable definitions (and comments) to the variable
-# definitions file.  These variables have been set above using the vari-
-# ables in the default and local configuration scripts.  These variables
-# are needed by various tasks/scripts in the workflow.
+# Construct the experiment's variable definitions file.  Below, we first
+# record the contents we want to place in this file in the variable 
+# var_defns_file_contents, and we then write the contents of this 
+# variable to the file.
 #
 #-----------------------------------------------------------------------
 #
-{ cat << EOM >> ${GLOBAL_VAR_DEFNS_FP}
+print_info_msg "
+Generating the global experiment variable definitions file specified by
+GLOBAL_VAR_DEFNS_FN:
+  GLOBAL_VAR_DEFNS_FN = \"${GLOBAL_VAR_DEFNS_FN}\"
+Full path to this file is:
+  GLOBAL_VAR_DEFNS_FP = \"${GLOBAL_VAR_DEFNS_FP}\"
+For more detailed information, set DEBUG to \"TRUE\" in the experiment
+configuration file (\"${EXPT_CONFIG_FN}\")."
 
+var_defns_file_contents="\
+#
+#-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
+# Section 1:
+# This section contains (most of) the primary experiment variables, i.e. 
+# those variables that are defined in the default configuration file 
+# (${EXPT_DEFAULT_CONFIG_FN}) and that can be reset via the user-specified 
+# experiment configuration file (${EXPT_CONFIG_FN}).
+#-----------------------------------------------------------------------
+#-----------------------------------------------------------------------
+#
+${var_defns}"
+#
+# Append derived/secondary variable definitions (as well as comments) to 
+# the contents of the variable definitions file.
+#
+ensmem_names_str=$(printf "${escbksl_nl_or_null}\"%s\" " "${ENSMEM_NAMES[@]}")
+ensmem_names_str=$(printf "( %s${escbksl_nl_or_null})" "${ensmem_names_str}")
+
+fv3_nml_ensmem_fps_str=$(printf "${escbksl_nl_or_null}\"%s\" " "${FV3_NML_ENSMEM_FPS[@]}")
+fv3_nml_ensmem_fps_str=$(printf "( %s${escbksl_nl_or_null})" "${fv3_nml_ensmem_fps_str}")
+
+var_defns_file_contents=${var_defns_file_contents}"\
 #
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 # Section 2:
-# This section defines variables that have been derived from the ones
-# above by the setup script (setup.sh) and which are needed by one or
-# more of the scripts that perform the workflow tasks (those scripts
-# source this variable definitions file).
+# This section defines variables that have been derived from the primary
+# set of experiment variables above (we refer to these as \"derived\" or
+# \"secondary\" variables).
 #-----------------------------------------------------------------------
 #-----------------------------------------------------------------------
 #
@@ -2643,15 +2279,15 @@ done <<< "${line_list}"
 #
 #-----------------------------------------------------------------------
 #
-# Full path to workflow launcher script, its log file, and the line that
-# gets added to the cron table to launch this script if USE_CRON_TO_RELAUNCH
-# is set to TRUE.
+# Full path to workflow (re)launch script, its log file, and the line 
+# that gets added to the cron table to launch this script if the flag 
+# USE_CRON_TO_RELAUNCH is set to \"TRUE\".
 #
 #-----------------------------------------------------------------------
 #
-WFLOW_LAUNCH_SCRIPT_FP="${WFLOW_LAUNCH_SCRIPT_FP}"
-WFLOW_LAUNCH_LOG_FP="${WFLOW_LAUNCH_LOG_FP}"
-CRONTAB_LINE="${CRONTAB_LINE}"
+WFLOW_LAUNCH_SCRIPT_FP='${WFLOW_LAUNCH_SCRIPT_FP}'
+WFLOW_LAUNCH_LOG_FP='${WFLOW_LAUNCH_LOG_FP}'
+CRONTAB_LINE='${CRONTAB_LINE}'
 #
 #-----------------------------------------------------------------------
 #
@@ -2659,41 +2295,44 @@ CRONTAB_LINE="${CRONTAB_LINE}"
 #
 #-----------------------------------------------------------------------
 #
-SR_WX_APP_TOP_DIR="${SR_WX_APP_TOP_DIR}"
-HOMErrfs="$HOMErrfs"
-USHDIR="$USHDIR"
-SCRIPTSDIR="$SCRIPTSDIR"
-JOBSDIR="$JOBSDIR"
-SORCDIR="$SORCDIR"
-SRC_DIR="$SRC_DIR"
-PARMDIR="$PARMDIR"
-MODULES_DIR="${MODULES_DIR}"
-EXECDIR="$EXECDIR"
-FIXam="$FIXam"
-FIXLAM="$FIXLAM"
-FIXgsm="$FIXgsm"
-COMROOT="$COMROOT"
-COMOUT_BASEDIR="${COMOUT_BASEDIR}"
-TEMPLATE_DIR="${TEMPLATE_DIR}"
-VX_CONFIG_DIR="${VX_CONFIG_DIR}"
-METPLUS_CONF="${METPLUS_CONF}"
-MET_CONFIG="${MET_CONFIG}"
-UFS_WTHR_MDL_DIR="${UFS_WTHR_MDL_DIR}"
-UFS_UTILS_DIR="${UFS_UTILS_DIR}"
-SFC_CLIMO_INPUT_DIR="${SFC_CLIMO_INPUT_DIR}"
-TOPO_DIR="${TOPO_DIR}"
-UPP_DIR="${UPP_DIR}"
+SR_WX_APP_TOP_DIR='${SR_WX_APP_TOP_DIR}'
+HOMErrfs='$HOMErrfs'
+USHDIR='$USHDIR'
+SCRIPTSDIR='$SCRIPTSDIR'
+JOBSDIR='$JOBSDIR'
+SORCDIR='$SORCDIR'
+SRC_DIR='${SRC_DIR}'
+PARMDIR='$PARMDIR'
+MODULES_DIR='${MODULES_DIR}'
+EXECDIR='$EXECDIR'
+FIXam='$FIXam'
+FIXclim='$FIXclim'
+FIXLAM='$FIXLAM'
+FIXgsm='$FIXgsm'
+FIXaer='$FIXaer'
+FIXlut='$FIXlut'
+COMROOT='$COMROOT'
+COMOUT_BASEDIR='${COMOUT_BASEDIR}'
+TEMPLATE_DIR='${TEMPLATE_DIR}'
+VX_CONFIG_DIR='${VX_CONFIG_DIR}'
+METPLUS_CONF='${METPLUS_CONF}'
+MET_CONFIG='${MET_CONFIG}'
+UFS_WTHR_MDL_DIR='${UFS_WTHR_MDL_DIR}'
+UFS_UTILS_DIR='${UFS_UTILS_DIR}'
+SFC_CLIMO_INPUT_DIR='${SFC_CLIMO_INPUT_DIR}'
+TOPO_DIR='${TOPO_DIR}'
+UPP_DIR='${UPP_DIR}'
 
-EXPTDIR="$EXPTDIR"
-LOGDIR="$LOGDIR"
-CYCLE_BASEDIR="${CYCLE_BASEDIR}"
-GRID_DIR="${GRID_DIR}"
-OROG_DIR="${OROG_DIR}"
-SFC_CLIMO_DIR="${SFC_CLIMO_DIR}"
+EXPTDIR='$EXPTDIR'
+LOGDIR='$LOGDIR'
+CYCLE_BASEDIR='${CYCLE_BASEDIR}'
+GRID_DIR='${GRID_DIR}'
+OROG_DIR='${OROG_DIR}'
+SFC_CLIMO_DIR='${SFC_CLIMO_DIR}'
 
-NDIGITS_ENSMEM_NAMES="${NDIGITS_ENSMEM_NAMES}"
-ENSMEM_NAMES=( $( printf "\"%s\" " "${ENSMEM_NAMES[@]}" ))
-FV3_NML_ENSMEM_FPS=( $( printf "\"%s\" " "${FV3_NML_ENSMEM_FPS[@]}" ))
+NDIGITS_ENSMEM_NAMES='${NDIGITS_ENSMEM_NAMES}'
+ENSMEM_NAMES=${ensmem_names_str}
+FV3_NML_ENSMEM_FPS=${fv3_nml_ensmem_fps_str}
 #
 #-----------------------------------------------------------------------
 #
@@ -2701,46 +2340,43 @@ FV3_NML_ENSMEM_FPS=( $( printf "\"%s\" " "${FV3_NML_ENSMEM_FPS[@]}" ))
 #
 #-----------------------------------------------------------------------
 #
-GLOBAL_VAR_DEFNS_FP="${GLOBAL_VAR_DEFNS_FP}"
-# Try this at some point instead of hard-coding it as above; it's a more
-# flexible approach (if it works).
-#GLOBAL_VAR_DEFNS_FP=$( readlink -f "${BASH_SOURCE[0]}" )
+GLOBAL_VAR_DEFNS_FP='${GLOBAL_VAR_DEFNS_FP}'
 
-DATA_TABLE_TMPL_FN="${DATA_TABLE_TMPL_FN}"
-DIAG_TABLE_TMPL_FN="${DIAG_TABLE_TMPL_FN}"
-FIELD_TABLE_TMPL_FN="${FIELD_TABLE_TMPL_FN}"
-MODEL_CONFIG_TMPL_FN="${MODEL_CONFIG_TMPL_FN}"
-NEMS_CONFIG_TMPL_FN="${NEMS_CONFIG_TMPL_FN}"
+DATA_TABLE_TMPL_FN='${DATA_TABLE_TMPL_FN}'
+DIAG_TABLE_TMPL_FN='${DIAG_TABLE_TMPL_FN}'
+FIELD_TABLE_TMPL_FN='${FIELD_TABLE_TMPL_FN}'
+MODEL_CONFIG_TMPL_FN='${MODEL_CONFIG_TMPL_FN}'
+NEMS_CONFIG_TMPL_FN='${NEMS_CONFIG_TMPL_FN}'
 
-DATA_TABLE_TMPL_FP="${DATA_TABLE_TMPL_FP}"
-DIAG_TABLE_TMPL_FP="${DIAG_TABLE_TMPL_FP}"
-FIELD_TABLE_TMPL_FP="${FIELD_TABLE_TMPL_FP}"
-FV3_NML_BASE_SUITE_FP="${FV3_NML_BASE_SUITE_FP}"
-FV3_NML_YAML_CONFIG_FP="${FV3_NML_YAML_CONFIG_FP}"
-FV3_NML_BASE_ENS_FP="${FV3_NML_BASE_ENS_FP}"
-MODEL_CONFIG_TMPL_FP="${MODEL_CONFIG_TMPL_FP}"
-NEMS_CONFIG_TMPL_FP="${NEMS_CONFIG_TMPL_FP}"
+DATA_TABLE_TMPL_FP='${DATA_TABLE_TMPL_FP}'
+DIAG_TABLE_TMPL_FP='${DIAG_TABLE_TMPL_FP}'
+FIELD_TABLE_TMPL_FP='${FIELD_TABLE_TMPL_FP}'
+FV3_NML_BASE_SUITE_FP='${FV3_NML_BASE_SUITE_FP}'
+FV3_NML_YAML_CONFIG_FP='${FV3_NML_YAML_CONFIG_FP}'
+FV3_NML_BASE_ENS_FP='${FV3_NML_BASE_ENS_FP}'
+MODEL_CONFIG_TMPL_FP='${MODEL_CONFIG_TMPL_FP}'
+NEMS_CONFIG_TMPL_FP='${NEMS_CONFIG_TMPL_FP}'
 
-CCPP_PHYS_SUITE_FN="${CCPP_PHYS_SUITE_FN}"
-CCPP_PHYS_SUITE_IN_CCPP_FP="${CCPP_PHYS_SUITE_IN_CCPP_FP}"
-CCPP_PHYS_SUITE_FP="${CCPP_PHYS_SUITE_FP}"
+CCPP_PHYS_SUITE_FN='${CCPP_PHYS_SUITE_FN}'
+CCPP_PHYS_SUITE_IN_CCPP_FP='${CCPP_PHYS_SUITE_IN_CCPP_FP}'
+CCPP_PHYS_SUITE_FP='${CCPP_PHYS_SUITE_FP}'
 
-FIELD_DICT_FN="${FIELD_DICT_FN}"
-FIELD_DICT_IN_UWM_FP="${FIELD_DICT_IN_UWM_FP}"
-FIELD_DICT_FP="${FIELD_DICT_FP}"
+FIELD_DICT_FN='${FIELD_DICT_FN}'
+FIELD_DICT_IN_UWM_FP='${FIELD_DICT_IN_UWM_FP}'
+FIELD_DICT_FP='${FIELD_DICT_FP}'
 
-DATA_TABLE_FP="${DATA_TABLE_FP}"
-FIELD_TABLE_FP="${FIELD_TABLE_FP}"
-FV3_NML_FN="${FV3_NML_FN}"   # This may not be necessary...
-FV3_NML_FP="${FV3_NML_FP}"
-NEMS_CONFIG_FP="${NEMS_CONFIG_FP}"
+DATA_TABLE_FP='${DATA_TABLE_FP}'
+FIELD_TABLE_FP='${FIELD_TABLE_FP}'
+FV3_NML_FN='${FV3_NML_FN}'
+FV3_NML_FP='${FV3_NML_FP}'
+NEMS_CONFIG_FP='${NEMS_CONFIG_FP}'
 
-FV3_EXEC_FP="${FV3_EXEC_FP}"
+FV3_EXEC_FP='${FV3_EXEC_FP}'
 
-LOAD_MODULES_RUN_TASK_FP="${LOAD_MODULES_RUN_TASK_FP}"
+LOAD_MODULES_RUN_TASK_FP='${LOAD_MODULES_RUN_TASK_FP}'
 
-THOMPSON_MP_CLIMO_FN="${THOMPSON_MP_CLIMO_FN}"
-THOMPSON_MP_CLIMO_FP="${THOMPSON_MP_CLIMO_FP}"
+THOMPSON_MP_CLIMO_FN='${THOMPSON_MP_CLIMO_FN}'
+THOMPSON_MP_CLIMO_FP='${THOMPSON_MP_CLIMO_FP}'
 #
 #-----------------------------------------------------------------------
 #
@@ -2748,106 +2384,99 @@ THOMPSON_MP_CLIMO_FP="${THOMPSON_MP_CLIMO_FP}"
 #
 #-----------------------------------------------------------------------
 #
-RELATIVE_LINK_FLAG="${RELATIVE_LINK_FLAG}"
+RELATIVE_LINK_FLAG='${RELATIVE_LINK_FLAG}'
 #
 #-----------------------------------------------------------------------
 #
 # Parameters that indicate whether or not various parameterizations are 
-# included in and called by the phsics suite.
+# included in and called by the physics suite.
 #
 #-----------------------------------------------------------------------
 #
-SDF_USES_RUC_LSM="${SDF_USES_RUC_LSM}"
-SDF_USES_THOMPSON_MP="${SDF_USES_THOMPSON_MP}"
+SDF_USES_RUC_LSM='${SDF_USES_RUC_LSM}'
+SDF_USES_THOMPSON_MP='${SDF_USES_THOMPSON_MP}'
 #
 #-----------------------------------------------------------------------
 #
-# Grid configuration parameters needed regardless of grid generation me-
-# thod used.
+# Grid configuration parameters needed regardless of grid generation
+# method used.
 #
 #-----------------------------------------------------------------------
 #
-GTYPE="$GTYPE"
-TILE_RGNL="${TILE_RGNL}"
-NH0="${NH0}"
-NH3="${NH3}"
-NH4="${NH4}"
+GTYPE='$GTYPE'
+TILE_RGNL='${TILE_RGNL}'
+NH0='${NH0}'
+NH3='${NH3}'
+NH4='${NH4}'
 
-LON_CTR="${LON_CTR}"
-LAT_CTR="${LAT_CTR}"
-NX="${NX}"
-NY="${NY}"
-NHW="${NHW}"
-STRETCH_FAC="${STRETCH_FAC}"
+LON_CTR='${LON_CTR}'
+LAT_CTR='${LAT_CTR}'
+NX='${NX}'
+NY='${NY}'
+NHW='${NHW}'
+STRETCH_FAC='${STRETCH_FAC}'
 
-RES_IN_FIXLAM_FILENAMES="${RES_IN_FIXLAM_FILENAMES}"
+RES_IN_FIXLAM_FILENAMES='${RES_IN_FIXLAM_FILENAMES}'
 #
-# If running the make_grid task, CRES will be set to a null string du-
-# the grid generation step.  It will later be set to an actual value af-
-# ter the make_grid task is complete.
+# If running the make_grid task, CRES will be set to a null string during
+# the grid generation step.  It will later be set to an actual value after
+# the make_grid task is complete.
 #
-CRES="$CRES"
-EOM
-} || print_err_msg_exit "\
-Heredoc (cat) command to append new variable definitions to variable 
-definitions file returned with a nonzero status."
+CRES='$CRES'
+"
 #
 #-----------------------------------------------------------------------
 #
-# Append to the variable definitions file the defintions of grid parame-
-# ters that are specific to the grid generation method used.
+# Append to the variable definitions file the defintions of grid parameters
+# that are specific to the grid generation method used.
 #
 #-----------------------------------------------------------------------
 #
+grid_vars_str=""
 if [ "${GRID_GEN_METHOD}" = "GFDLgrid" ]; then
 
-  { cat << EOM >> ${GLOBAL_VAR_DEFNS_FP}
+  grid_vars_str="\
 #
 #-----------------------------------------------------------------------
 #
 # Grid configuration parameters for a regional grid generated from a
-# global parent cubed-sphere grid.  This is the method originally sug-
-# gested by GFDL since it allows GFDL's nested grid generator to be used
-# to generate a regional grid.  However, for large regional domains, it
-# results in grids that have an unacceptably large range of cell sizes
+# global parent cubed-sphere grid.  This is the method originally 
+# suggested by GFDL since it allows GFDL's nested grid generator to be 
+# used to generate a regional grid.  However, for large regional domains, 
+# it results in grids that have an unacceptably large range of cell sizes
 # (i.e. ratio of maximum to minimum cell size is not sufficiently close
 # to 1).
 #
 #-----------------------------------------------------------------------
 #
-ISTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG="${ISTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG}"
-IEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG="${IEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG}"
-JSTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG="${JSTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG}"
-JEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG="${JEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG}"
-EOM
-} || print_err_msg_exit "\
-Heredoc (cat) command to append grid parameters to variable definitions
-file returned with a nonzero status."
+ISTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG='${ISTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG}'
+IEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG='${IEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG}'
+JSTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG='${JSTART_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG}'
+JEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG='${JEND_OF_RGNL_DOM_WITH_WIDE_HALO_ON_T6SG}'
+"
 
 elif [ "${GRID_GEN_METHOD}" = "ESGgrid" ]; then
 
-  { cat << EOM >> ${GLOBAL_VAR_DEFNS_FP}
+  grid_vars_str="\
 #
 #-----------------------------------------------------------------------
 #
-# Grid configuration parameters for a regional grid generated indepen-
-# dently of a global parent grid.  This method was developed by Jim Pur-
-# ser of EMC and results in very uniform grids (i.e. ratio of maximum to
-# minimum cell size is very close to 1).
+# Grid configuration parameters for a regional grid generated independently 
+# of a global parent grid.  This method was developed by Jim Purser of 
+# EMC and results in very uniform grids (i.e. ratio of maximum to minimum 
+# cell size is very close to 1).
 #
 #-----------------------------------------------------------------------
 #
-DEL_ANGLE_X_SG="${DEL_ANGLE_X_SG}"
-DEL_ANGLE_Y_SG="${DEL_ANGLE_Y_SG}"
-NEG_NX_OF_DOM_WITH_WIDE_HALO="${NEG_NX_OF_DOM_WITH_WIDE_HALO}"
-NEG_NY_OF_DOM_WITH_WIDE_HALO="${NEG_NY_OF_DOM_WITH_WIDE_HALO}"
-PAZI="${PAZI}"
-EOM
-} || print_err_msg_exit "\
-Heredoc (cat) command to append grid parameters to variable definitions
-file returned with a nonzero status."
+DEL_ANGLE_X_SG='${DEL_ANGLE_X_SG}'
+DEL_ANGLE_Y_SG='${DEL_ANGLE_Y_SG}'
+NEG_NX_OF_DOM_WITH_WIDE_HALO='${NEG_NX_OF_DOM_WITH_WIDE_HALO}'
+NEG_NY_OF_DOM_WITH_WIDE_HALO='${NEG_NY_OF_DOM_WITH_WIDE_HALO}'
+PAZI='${PAZI}'
+"
 
 fi
+var_defns_file_contents="${var_defns_file_contents}${grid_vars_str}"
 #
 #-----------------------------------------------------------------------
 #
@@ -2856,15 +2485,22 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-{ cat << EOM >> ${GLOBAL_VAR_DEFNS_FP}
+lbc_spec_fcst_hrs_str=$(printf "${escbksl_nl_or_null}\"%s\" " "${LBC_SPEC_FCST_HRS[@]}")
+lbc_spec_fcst_hrs_str=$(printf "( %s${escbksl_nl_or_null})" "${lbc_spec_fcst_hrs_str}")
+
+all_cdates_str=$(printf "${escbksl_nl_or_null}\"%s\" " "${ALL_CDATES[@]}")
+all_cdates_str=$(printf "( %s${escbksl_nl_or_null})" "${all_cdates_str}")
+
+var_defns_file_contents=${var_defns_file_contents}"\
 #
 #-----------------------------------------------------------------------
 #
-# CPL: parameter for coupling in model_configure
+# Flag in the \"${MODEL_CONFIG_FN}\" file for coupling the ocean model to 
+# the weather model.
 #
 #-----------------------------------------------------------------------
 #
-CPL="${CPL}"
+CPL='${CPL}'
 #
 #-----------------------------------------------------------------------
 #
@@ -2873,11 +2509,11 @@ CPL="${CPL}"
 #
 #-----------------------------------------------------------------------
 #
-OZONE_PARAM="${OZONE_PARAM}"
+OZONE_PARAM='${OZONE_PARAM}'
 #
 #-----------------------------------------------------------------------
 #
-# If USE_USER_STAGED_EXTRN_FILES is set to "FALSE", this is the system 
+# If USE_USER_STAGED_EXTRN_FILES is set to \"FALSE\", this is the system 
 # directory in which the workflow scripts will look for the files generated 
 # by the external model specified in EXTRN_MDL_NAME_ICS.  These files will 
 # be used to generate the input initial condition and surface files for 
@@ -2885,11 +2521,11 @@ OZONE_PARAM="${OZONE_PARAM}"
 #
 #-----------------------------------------------------------------------
 #
-EXTRN_MDL_SYSBASEDIR_ICS="${EXTRN_MDL_SYSBASEDIR_ICS}"
+EXTRN_MDL_SYSBASEDIR_ICS='${EXTRN_MDL_SYSBASEDIR_ICS}'
 #
 #-----------------------------------------------------------------------
 #
-# If USE_USER_STAGED_EXTRN_FILES is set to "FALSE", this is the system 
+# If USE_USER_STAGED_EXTRN_FILES is set to \"FALSE\", this is the system 
 # directory in which the workflow scripts will look for the files generated 
 # by the external model specified in EXTRN_MDL_NAME_LBCS.  These files 
 # will be used to generate the input lateral boundary condition files for 
@@ -2897,7 +2533,7 @@ EXTRN_MDL_SYSBASEDIR_ICS="${EXTRN_MDL_SYSBASEDIR_ICS}"
 #
 #-----------------------------------------------------------------------
 #
-EXTRN_MDL_SYSBASEDIR_LBCS="${EXTRN_MDL_SYSBASEDIR_LBCS}"
+EXTRN_MDL_SYSBASEDIR_LBCS='${EXTRN_MDL_SYSBASEDIR_LBCS}'
 #
 #-----------------------------------------------------------------------
 #
@@ -2906,7 +2542,7 @@ EXTRN_MDL_SYSBASEDIR_LBCS="${EXTRN_MDL_SYSBASEDIR_LBCS}"
 #
 #-----------------------------------------------------------------------
 #
-EXTRN_MDL_LBCS_OFFSET_HRS="${EXTRN_MDL_LBCS_OFFSET_HRS}"
+EXTRN_MDL_LBCS_OFFSET_HRS='${EXTRN_MDL_LBCS_OFFSET_HRS}'
 #
 #-----------------------------------------------------------------------
 #
@@ -2915,31 +2551,33 @@ EXTRN_MDL_LBCS_OFFSET_HRS="${EXTRN_MDL_LBCS_OFFSET_HRS}"
 #
 #-----------------------------------------------------------------------
 #
-LBC_SPEC_FCST_HRS=(${LBC_SPEC_FCST_HRS[@]})
+LBC_SPEC_FCST_HRS=${lbc_spec_fcst_hrs_str}
 #
 #-----------------------------------------------------------------------
 #
-# The number of cycles for which to make forecasts and the list of starting
-# dates/hours of these cycles.
+# The number of cycles for which to make forecasts and the list of 
+# starting dates/hours of these cycles.
 #
 #-----------------------------------------------------------------------
 #
-NUM_CYCLES="${NUM_CYCLES}"
-ALL_CDATES=( \\
-$( printf "\"%s\" \\\\\n" "${ALL_CDATES[@]}" )
-)
+NUM_CYCLES='${NUM_CYCLES}'
+ALL_CDATES=${all_cdates_str}
 #
 #-----------------------------------------------------------------------
 #
-# If USE_FVCOM is set to TRUE, then FVCOM data (located in FVCOM_DIR
-# in FVCOM_FILE) will be used to update lower boundary conditions during
-# make_ics.
+# Parameters that determine whether FVCOM data will be used, and if so, 
+# their location.
+#
+# If USE_FVCOM is set to \"TRUE\", then FVCOM data (in the file FVCOM_FILE
+# located in the directory FVCOM_DIR) will be used to update the surface 
+# boundary conditions during the initial conditions generation task 
+# (MAKE_ICS_TN).
 #
 #-----------------------------------------------------------------------
 #
-USE_FVCOM="${USE_FVCOM}"
-FVCOM_DIR="${FVCOM_DIR}"
-FVCOM_FILE="${FVCOM_FILE}"
+USE_FVCOM='${USE_FVCOM}'
+FVCOM_DIR='${FVCOM_DIR}'
+FVCOM_FILE='${FVCOM_FILE}'
 #
 #-----------------------------------------------------------------------
 #
@@ -2947,21 +2585,27 @@ FVCOM_FILE="${FVCOM_FILE}"
 #
 #-----------------------------------------------------------------------
 #
-NCORES_PER_NODE="${NCORES_PER_NODE}"
-PE_MEMBER01="${PE_MEMBER01}"
+NCORES_PER_NODE='${NCORES_PER_NODE}'
+PE_MEMBER01='${PE_MEMBER01}'
 #
 #-----------------------------------------------------------------------
 #
-# IF DO_SPP="TRUE," N_VAR_SPP is the number of parameterizations that
-# are perturbed with SPP, otherwise N_VAR_SPP=0.
+# IF DO_SPP is set to \"TRUE\", N_VAR_SPP specifies the number of physics 
+# parameterizations that are perturbed with SPP.  Otherwise, N_VAR_SPP 
+# is set 0.
 #
 #-----------------------------------------------------------------------
 #
-N_VAR_SPP="${N_VAR_SPP}"
-EOM
-} || print_err_msg_exit "\
-Heredoc (cat) command to append new variable definitions to variable 
-definitions file returned with a nonzero status."
+N_VAR_SPP='${N_VAR_SPP}'
+"
+#
+# Done with constructing the contents of the variable definitions file,
+# so now write the contents to file.
+#
+printf "%s\n" "${var_defns_file_contents}" >> ${GLOBAL_VAR_DEFNS_FP}
+
+print_info_msg "$VERBOSE" "
+Done generating the global experiment variable definitions file."
 #
 #-----------------------------------------------------------------------
 #
@@ -2971,7 +2615,7 @@ definitions file returned with a nonzero status."
 #
 print_info_msg "
 ========================================================================
-Setup script completed successfully!!!
+Function ${func_name}() in \"${scrfunc_fn}\" completed successfully!!!
 ========================================================================"
 #
 #-----------------------------------------------------------------------

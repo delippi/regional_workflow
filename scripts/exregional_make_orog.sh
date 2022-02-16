@@ -35,7 +35,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -104,7 +104,7 @@ case "$MACHINE" in
     module list
     { restore_shell_opts; } > /dev/null 2>&1
     NODES=1
-    APRUN="aprun -n 1 -N 1 -j 1 -d 1 -cc depth"
+    RUN_CMD_SERIAL="aprun -n 1 -N 1 -j 1 -d 1 -cc depth"
     ulimit -s unlimited
     ulimit -a
     ;;
@@ -112,49 +112,24 @@ case "$MACHINE" in
   "WCOSS_DELL_P3")
     ulimit -s unlimited
     ulimit -a
-    APRUN="mpirun"
-    ;;
-
-  "HERA")
-    ulimit -s unlimited
-    ulimit -a
-    APRUN="time"
-    ;;
-
-  "ORION")
-    ulimit -s unlimited
-    ulimit -a
-    APRUN="time"
-    ;;
-
-  "JET")
-    ulimit -s unlimited
-    ulimit -a
-    APRUN="time"
-    ;;
-
-  "ODIN")
-    APRUN="srun -n 1"
-    ulimit -s unlimited
-    ulimit -a
-    ;;
-
-  "CHEYENNE")
-    APRUN="time"
-    ;;
-
-  "STAMPEDE")
-    APRUN="time"
+    RUN_CMD_SERIAL="mpirun"
     ;;
 
   *)
-    print_err_msg_exit "\
-Run command has not been specified for this machine:
-  MACHINE = \"$MACHINE\"
-  APRUN = \"$APRUN\""
+    source ${MACHINE_FILE}
     ;;
 
 esac
+
+if [ -z ${RUN_CMD_SERIAL:-} ] ; then
+  print_err_msg_exit "\
+  Run command was not set in machine file. \
+  Please set RUN_CMD_SERIAL for your platform"
+else
+  RUN_CMD_SERIAL=$(eval echo ${RUN_CMD_SERIAL})
+  print_info_msg "$VERBOSE" "
+  All executables will be submitted with command \'${RUN_CMD_SERIAL}\'."
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -226,7 +201,8 @@ cp_vrfy ${TOPO_DIR}/gmted2010.30sec.int fort.235
 mosaic_fn="${CRES}${DOT_OR_USCORE}mosaic.halo${NHW}.nc"
 mosaic_fp="$FIXLAM/${mosaic_fn}"
 
-grid_fn=$( get_charvar_from_netcdf "${mosaic_fp}" "gridfiles" )
+grid_fn=$( get_charvar_from_netcdf "${mosaic_fp}" "gridfiles" ) || print_err_msg_exit "\
+  get_charvar_from_netcdf function failed."
 grid_fp="${FIXLAM}/${grid_fn}"
 #
 #-----------------------------------------------------------------------
@@ -284,10 +260,10 @@ cat "${input_redirect_fn}"
 #
 #-----------------------------------------------------------------------
 #
-print_info_msg "$VERBOSE" "
+print_info_msg "$VERBOSE" "\
 Starting orography file generation..."
 
-$APRUN "${exec_fp}" < "${input_redirect_fn}" || \
+${RUN_CMD_SERIAL} "${exec_fp}" < "${input_redirect_fn}" || \
       print_err_msg_exit "\
 Call to executable (exec_fp) that generates the raw orography file returned
 with nonzero exit code:
@@ -327,18 +303,17 @@ if [ "${CCPP_PHYS_SUITE}" = "FV3_HRRR" ]; then
   cd_vrfy ${tmp_dir}
   mosaic_fn_gwd="${CRES}${DOT_OR_USCORE}mosaic.halo${NH4}.nc"
   mosaic_fp_gwd="$FIXLAM/${mosaic_fn_gwd}"
-  grid_fn_gwd=$( get_charvar_from_netcdf "${mosaic_fp_gwd}" "gridfiles" )
+  grid_fn_gwd=$( get_charvar_from_netcdf "${mosaic_fp_gwd}" "gridfiles" ) || \
+    print_err_msg_exit "get_charvar_from_netcdf function failed."
   grid_fp_gwd="${FIXLAM}/${grid_fn_gwd}"
   ls_fn="geo_em.d01.lat-lon.2.5m.HGT_M.nc"
   ss_fn="HGT.Beljaars_filtered.lat-lon.30s_res.nc"
-  if [ "${MACHINE}" = "WCOSS_CRAY" ]; then
-    relative_or_null=""
-  else
-    relative_or_null="--relative"
-  fi
-  ln_vrfy -fs ${relative_or_null} "${grid_fp_gwd}" "${tmp_dir}/${grid_fn_gwd}"
-  ln_vrfy -fs ${relative_or_null} "${FIXam}/${ls_fn}" "${tmp_dir}/${ls_fn}"
-  ln_vrfy -fs ${relative_or_null} "${FIXam}/${ss_fn}" "${tmp_dir}/${ss_fn}"
+  create_symlink_to_file target="${grid_fp_gwd}" symlink="${tmp_dir}/${grid_fn_gwd}" \
+                         relative="TRUE"
+  create_symlink_to_file target="${FIXam}/${ls_fn}" symlink="${tmp_dir}/${ls_fn}" \
+                         relative="TRUE"
+  create_symlink_to_file target="${FIXam}/${ss_fn}" symlink="${tmp_dir}/${ss_fn}" \
+                         relative="TRUE"
 
   input_redirect_fn="grid_info.dat"
   cat > "${input_redirect_fn}" <<EOF
@@ -360,7 +335,7 @@ Please ensure that you've built this executable."
   print_info_msg "$VERBOSE" "
 Starting orography file generation..."
 
-  $APRUN "${exec_fp}" < "${input_redirect_fn}" || \
+  ${RUN_CMD_SERIAL} "${exec_fp}" < "${input_redirect_fn}" || \
       print_err_msg_exit "\
 Call to executable (exec_fp) that generates the GSL orography GWD data files
 returned with nonzero exit code:
@@ -480,7 +455,6 @@ cp_vrfy "${raw_orog_fp}" "${filtered_orog_fp}"
 #
 create_symlink_to_file target="${grid_fp}" symlink="${filter_dir}/${grid_fn}" \
                        relative="TRUE"
-
 #
 # Create the namelist file (in the filter_dir directory) that the orography
 # filtering executable will read in.
@@ -509,7 +483,7 @@ cd_vrfy "${filter_dir}"
 print_info_msg "$VERBOSE" "
 Starting filtering of orography..."
 
-$APRUN "${exec_fp}" || \
+${RUN_CMD_SERIAL} "${exec_fp}" || \
   print_err_msg_exit "\
 Call to executable that generates filtered orography file returned with
 non-zero exit code."
@@ -578,7 +552,7 @@ printf "%s %s %s %s %s\n" \
   $NX $NY ${NH0} \"${unshaved_fp}\" \"${shaved_fp}\" \
   > ${nml_fn}
 
-$APRUN ${exec_fp} < ${nml_fn} || \
+${RUN_CMD_SERIAL} ${exec_fp} < ${nml_fn} || \
 print_err_msg_exit "\
 Call to executable (exec_fp) to generate a (filtered) orography file with
 a ${NH0}-cell-wide halo from the orography file with a {NHW}-cell-wide halo
@@ -604,7 +578,7 @@ printf "%s %s %s %s %s\n" \
   $NX $NY ${NH4} \"${unshaved_fp}\" \"${shaved_fp}\" \
   > ${nml_fn}
 
-$APRUN ${exec_fp} < ${nml_fn} || \
+${RUN_CMD_SERIAL} ${exec_fp} < ${nml_fn} || \
 print_err_msg_exit "\
 Call to executable (exec_fp) to generate a (filtered) orography file with
 a ${NH4}-cell-wide halo from the orography file with a {NHW}-cell-wide halo

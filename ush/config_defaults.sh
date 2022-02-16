@@ -41,10 +41,45 @@ RUN_ENVIR="nco"
 # Set machine and queue parameters.  Definitions:
 #
 # MACHINE:
-# Machine on which the workflow will run.
+# Machine on which the workflow will run. If you are NOT on a named,
+# supported platform, and you want to use the Rocoto workflow manager,
+# you will need set MACHINE="linux" and WORKFLOW_MANAGER="rocoto". This
+# combination will assume a Slurm batch manager when generating the XML.
+# Please see ush/valid_param_vals.sh for a full list of supported
+# platforms.
+#
+# MACHINE_FILE:
+# Path to a configuration file with machine-specific settings. If none
+# is provided, setup.sh will attempt to set the path to for a supported
+# platform.
 #
 # ACCOUNT:
 # The account under which to submit jobs to the queue.
+#
+# WORKFLOW_MANAGER:
+# The workflow manager to use (e.g. rocoto). This is set to "none" by
+# default, but if the machine name is set to a platform that supports
+# rocoto, this will be overwritten and set to "rocoto". If set
+# explicitly to rocoto along with the use of the MACHINE=linux target,
+# the configuration layer assumes a Slurm batch manager when generating
+# the XML. Valid options: "rocoto" or "none"
+#
+# NCORES_PER_NODE:
+# The number of cores available per node on the compute platform. Set
+# for supported platforms in setup.sh, but is now also configurable for
+# all platforms.
+#
+# LMOD_PATH:
+# Path to the LMOD sh file on your Linux system. Is set automatically
+# for supported machines.
+#
+# BUILD_ENV_FN:
+# Name of alternative build environment file to use if using an
+# unsupported platform. Is set automatically for supported machines.
+#
+# WFLOW_ENV_FN:
+# Name of alternative workflow environment file to use if using an
+# unsupported platform. Is set automatically for supported machines.
 #
 # SCHED:
 # The job scheduler to use (e.g. slurm).  Set this to an empty string in
@@ -102,7 +137,13 @@ RUN_ENVIR="nco"
 #-----------------------------------------------------------------------
 #
 MACHINE="BIG_COMPUTER"
+MACHINE_FILE=""
 ACCOUNT="project_name"
+WORKFLOW_MANAGER="none"
+NCORES_PER_NODE=""
+LMOD_PATH=""
+BUILD_ENV_FN=""
+WFLOW_ENV_FN=""
 SCHED=""
 PARTITION_DEFAULT=""
 QUEUE_DEFAULT=""
@@ -110,6 +151,31 @@ PARTITION_HPSS=""
 QUEUE_HPSS=""
 PARTITION_FCST=""
 QUEUE_FCST=""
+#
+#-----------------------------------------------------------------------
+#
+# Set run commands for platforms without a workflow manager. These values
+# will be ignored unless WORKFLOW_MANAGER="none".  Definitions:
+#
+# RUN_CMD_UTILS:
+# The run command for pre-processing utilities (shave, orog, sfc_climo_gen, 
+# etc.) Can be left blank for smaller domains, in which case the executables 
+# will run without MPI.
+#
+# RUN_CMD_FCST:
+# The run command for the model forecast step. This will be appended to 
+# the end of the variable definitions file, so it can reference other 
+# variables.
+#
+# RUN_CMD_POST:
+# The run command for post-processing (UPP). Can be left blank for smaller 
+# domains, in which case UPP will run without MPI.
+#
+#-----------------------------------------------------------------------
+#
+RUN_CMD_UTILS="mpirun -np 1"
+RUN_CMD_FCST='mpirun -np \${PE_MEMBER01}'
+RUN_CMD_POST="mpirun -np 1"
 #
 #-----------------------------------------------------------------------
 #
@@ -152,10 +218,14 @@ CRON_RELAUNCH_INTVL_MNTS="03"
 #
 # dir_doc_end
 #
+# EXEC_SUBDIR:
+# The name of the subdirectory of ufs-srweather-app where executables are
+# installed.
 #-----------------------------------------------------------------------
 #
 EXPT_BASEDIR=""
 EXPT_SUBDIR=""
+EXEC_SUBDIR="bin"
 #
 #-----------------------------------------------------------------------
 #
@@ -236,7 +306,7 @@ PTMP="/base/path/of/directory/containing/postprocessed/output/files"
 #
 #-----------------------------------------------------------------------
 #
-# Set the sparator character(s) to use in the names of the grid, mosaic,
+# Set the separator character(s) to use in the names of the grid, mosaic,
 # and orography fixed files.
 #
 # Ideally, the same separator should be used in the names of these fixed
@@ -377,6 +447,10 @@ WFLOW_LAUNCH_LOG_FN="log.launch_FV3LAM_wflow"
 # two-digit string representing an integer that is less than or equal to
 # 23, e.g. "00", "03", "12", "23".
 #
+# INCR_CYCL_FREQ:
+# Increment in hours for Cycle Frequency (cycl_freq).
+# Default is 24, which means cycle_freq=24:00:00
+#
 # FCST_LEN_HRS:
 # The length of each forecast, in integer hours.
 #
@@ -385,6 +459,7 @@ WFLOW_LAUNCH_LOG_FN="log.launch_FV3LAM_wflow"
 DATE_FIRST_CYCL="YYYYMMDD"
 DATE_LAST_CYCL="YYYYMMDD"
 CYCL_HRS=( "HH1" "HH2" )
+INCR_CYCL_FREQ="24"
 FCST_LEN_HRS="24"
 #
 #-----------------------------------------------------------------------
@@ -509,12 +584,12 @@ WRITE_DOPOST="FALSE"
 #-----------------------------------------------------------------------
 #
 MODEL=""
-MET_INSTALL_DIR="/path/to/MET"
+MET_INSTALL_DIR=""
 MET_BIN_EXEC="bin"
-METPLUS_PATH="/path/to/METPlus"
-CCPA_OBS_DIR="/path/to/observation-directory/ccpa/proc"
-MRMS_OBS_DIR="/path/to/observation-directory/mrms/proc"
-NDAS_OBS_DIR="/path/to/observation-directory/ndas/proc"
+METPLUS_PATH=""
+CCPA_OBS_DIR=""
+MRMS_OBS_DIR=""
+NDAS_OBS_DIR=""
 #
 #-----------------------------------------------------------------------
 #
@@ -540,6 +615,24 @@ NDAS_OBS_DIR="/path/to/observation-directory/ndas/proc"
 # data availble at least every 6 hours.  It is up to the user to ensure 
 # that this is the case.
 #
+# EXTRN_MDL_ICS_OFFSET_HRS:
+# Users may wish to start a forecast from a forecast of a previous cycle
+# of an external model. This variable sets the number of hours earlier
+# the external model started than when the FV3 forecast configured here
+# should start. For example, the forecast should start from a 6 hour
+# forecast of the GFS, then EXTRN_MDL_ICS_OFFSET_HRS=6.
+
+# EXTRN_MDL_LBCS_OFFSET_HRS:
+# Users may wish to use lateral boundary conditions from a forecast that
+# was started earlier than the initial time for the FV3 forecast
+# configured here. This variable sets the number of hours earlier
+# the external model started than when the FV3 forecast configured here
+# should start. For example, the forecast should use lateral boundary
+# conditions from the GFS started 6 hours earlier, then
+# EXTRN_MDL_LBCS_OFFSET_HRS=6.
+# Note: the default value is model-dependent and set in
+# set_extrn_mdl_params.sh
+#
 # FV3GFS_FILE_FMT_ICS:
 # If using the FV3GFS model as the source of the ICs (i.e. if EXTRN_MDL_NAME_ICS
 # is set to "FV3GFS"), this variable specifies the format of the model
@@ -555,6 +648,8 @@ NDAS_OBS_DIR="/path/to/observation-directory/ndas/proc"
 EXTRN_MDL_NAME_ICS="FV3GFS"
 EXTRN_MDL_NAME_LBCS="FV3GFS"
 LBC_SPEC_INTVL_HRS="6"
+EXTRN_MDL_ICS_OFFSET_HRS="0"
+EXTRN_MDL_LBCS_OFFSET_HRS=""
 FV3GFS_FILE_FMT_ICS="nemsio"
 FV3GFS_FILE_FMT_LBCS="nemsio"
 #
@@ -578,8 +673,8 @@ FV3GFS_FILE_FMT_LBCS="nemsio"
 #
 #-----------------------------------------------------------------------
 #
-EXTRN_MDL_SYSBASEDIR_ICS=""
-EXTRN_MDL_SYSBASEDIR_LBCS=""
+EXTRN_MDL_SYSBASEDIR_ICS=''
+EXTRN_MDL_SYSBASEDIR_LBCS=''
 #
 #-----------------------------------------------------------------------
 #
@@ -1113,13 +1208,21 @@ PREEXISTING_DIR_METHOD="delete"
 #
 #-----------------------------------------------------------------------
 #
-# Set VERBOSE.  This is a flag that determines whether or not the experiment
-# generation and workflow task scripts tend to print out more informational
-# messages.
+# Set flags for more detailed messages.  Defintitions:
+#
+# VERBOSE:
+# This is a flag that determines whether or not the experiment generation 
+# and workflow task scripts tend to print out more informational messages.
+#
+# DEBUG:
+# This is a flag that determines whether or not very detailed debugging
+# messages are printed to out.  Note that if DEBUG is set to TRUE, then
+# VERBOSE will also get reset to TRUE if it isn't already.
 #
 #-----------------------------------------------------------------------
 #
 VERBOSE="TRUE"
+DEBUG="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -1148,6 +1251,25 @@ VX_GRIDSTAT_03h_TN="run_gridstatvx_03h"
 VX_GRIDSTAT_06h_TN="run_gridstatvx_06h"
 VX_GRIDSTAT_24h_TN="run_gridstatvx_24h"
 VX_POINTSTAT_TN="run_pointstatvx"
+VX_ENSGRID_TN="run_ensgridvx"
+VX_ENSGRID_03h_TN="run_ensgridvx_03h"
+VX_ENSGRID_06h_TN="run_ensgridvx_06h"
+VX_ENSGRID_24h_TN="run_ensgridvx_24h"
+VX_ENSGRID_REFC_TN="run_ensgridvx_refc"
+VX_ENSGRID_RETOP_TN="run_ensgridvx_retop"
+VX_ENSGRID_MEAN_TN="run_ensgridvx_mean"
+VX_ENSGRID_PROB_TN="run_ensgridvx_prob"
+VX_ENSGRID_MEAN_03h_TN="run_ensgridvx_mean_03h"
+VX_ENSGRID_PROB_03h_TN="run_ensgridvx_prob_03h"
+VX_ENSGRID_MEAN_06h_TN="run_ensgridvx_mean_06h"
+VX_ENSGRID_PROB_06h_TN="run_ensgridvx_prob_06h"
+VX_ENSGRID_MEAN_24h_TN="run_ensgridvx_mean_24h"
+VX_ENSGRID_PROB_24h_TN="run_ensgridvx_prob_24h"
+VX_ENSGRID_PROB_REFC_TN="run_ensgridvx_prob_refc"
+VX_ENSGRID_PROB_RETOP_TN="run_ensgridvx_prob_retop"
+VX_ENSPOINT_TN="run_enspointvx"
+VX_ENSPOINT_MEAN_TN="run_enspointvx_mean"
+VX_ENSPOINT_PROB_TN="run_enspointvx_prob"
 #
 #-----------------------------------------------------------------------
 #
@@ -1180,6 +1302,21 @@ VX_POINTSTAT_TN="run_pointstatvx"
 # SFC_CLIMO_DIR:
 # Same as GRID_DIR but for the MAKE_SFC_CLIMO_TN task.
 #
+# RUN_TASK_GET_EXTRN_ICS:
+# Flag that determines whether the GET_EXTRN_ICS_TN task is to be run.
+#
+# RUN_TASK_GET_EXTRN_LBCS:
+# Flag that determines whether the GET_EXTRN_LBCS_TN task is to be run.
+#
+# RUN_TASK_MAKE_ICS:
+# Flag that determines whether the MAKE_ICS_TN task is to be run.
+#
+# RUN_TASK_MAKE_LBCS:
+# Flag that determines whether the MAKE_LBCS_TN task is to be run.
+#
+# RUN_TASK_RUN_FCST:
+# Flag that determines whether the RUN_FCST_TN task is to be run.
+#
 # RUN_TASK_RUN_POST:
 # Flag that determines whether the RUN_POST_TN task is to be run.
 # 
@@ -1190,6 +1327,15 @@ VX_POINTSTAT_TN="run_pointstatvx"
 # RUN_TASK_VX_POINTSTAT:
 # Flag that determines whether the point-stat verification task is to be
 # run.
+#
+# RUN_TASK_VX_ENSGRID:
+# Flag that determines whether the ensemble-stat verification for gridded
+# data task is to be run. 
+#
+# RUN_TASK_VX_ENSPOINT:
+# Flag that determines whether the ensemble point verification task is
+# to be run. If this flag is set, both ensemble-stat point verification
+# and point verification of ensemble-stat output is computed.
 #
 #-----------------------------------------------------------------------
 #
@@ -1202,17 +1348,29 @@ OROG_DIR="/path/to/pregenerated/orog/files"
 RUN_TASK_MAKE_SFC_CLIMO="TRUE"
 SFC_CLIMO_DIR="/path/to/pregenerated/surface/climo/files"
 
+RUN_TASK_GET_EXTRN_ICS="TRUE"
+RUN_TASK_GET_EXTRN_LBCS="TRUE"
+RUN_TASK_MAKE_ICS="TRUE"
+RUN_TASK_MAKE_LBCS="TRUE"
+RUN_TASK_RUN_FCST="TRUE"
 RUN_TASK_RUN_POST="TRUE"
 
 RUN_TASK_GET_OBS_CCPA="FALSE"
-
 RUN_TASK_GET_OBS_MRMS="FALSE"
-
 RUN_TASK_GET_OBS_NDAS="FALSE"
-
 RUN_TASK_VX_GRIDSTAT="FALSE"
-
 RUN_TASK_VX_POINTSTAT="FALSE"
+RUN_TASK_VX_ENSGRID="FALSE"
+RUN_TASK_VX_ENSPOINT="FALSE"
+#
+#-----------------------------------------------------------------------
+#
+# Flag that determines whether MERRA2 aerosol climatology data and
+# lookup tables for optics properties are obtained
+#
+#-----------------------------------------------------------------------
+#
+USE_MERRA_CLIMO="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -1239,6 +1397,12 @@ SFC_CLIMO_FIELDS=( \
 # FIXgsm:
 # System directory in which the majority of fixed (i.e. time-independent) 
 # files that are needed to run the FV3-LAM model are located
+#
+# FIXaer:
+# System directory where MERRA2 aerosol climatology files are located
+#
+# FIXlut:
+# System directory where the lookup tables for optics properties are located
 #
 # TOPO_DIR:
 # The location on disk of the static input files used by the make_orog
@@ -1299,6 +1463,8 @@ SFC_CLIMO_FIELDS=( \
 # to a null string which will then be overwritten in setup.sh unless the
 # user has specified a different value in config.sh
 FIXgsm=""
+FIXaer=""
+FIXlut=""
 TOPO_DIR=""
 SFC_CLIMO_INPUT_DIR=""
 
@@ -1421,6 +1587,12 @@ NNODES_GET_OBS_MRMS="1"
 NNODES_GET_OBS_NDAS="1"
 NNODES_VX_GRIDSTAT="1"
 NNODES_VX_POINTSTAT="1"
+NNODES_VX_ENSGRID="1"
+NNODES_VX_ENSGRID_MEAN="1"
+NNODES_VX_ENSGRID_PROB="1"
+NNODES_VX_ENSPOINT="1"
+NNODES_VX_ENSPOINT_MEAN="1"
+NNODES_VX_ENSPOINT_PROB="1"
 #
 # Number of MPI processes per node.
 #
@@ -1438,11 +1610,17 @@ PPN_GET_OBS_MRMS="1"
 PPN_GET_OBS_NDAS="1"
 PPN_VX_GRIDSTAT="1"
 PPN_VX_POINTSTAT="1"
+PPN_VX_ENSGRID="1"
+PPN_VX_ENSGRID_MEAN="1"
+PPN_VX_ENSGRID_PROB="1"
+PPN_VX_ENSPOINT="1"
+PPN_VX_ENSPOINT_MEAN="1"
+PPN_VX_ENSPOINT_PROB="1"
 #
 # Walltimes.
 #
 WTIME_MAKE_GRID="00:20:00"
-WTIME_MAKE_OROG="00:20:00"
+WTIME_MAKE_OROG="01:00:00"
 WTIME_MAKE_SFC_CLIMO="00:20:00"
 WTIME_GET_EXTRN_ICS="00:45:00"
 WTIME_GET_EXTRN_LBCS="00:45:00"
@@ -1455,6 +1633,12 @@ WTIME_GET_OBS_MRMS="00:45:00"
 WTIME_GET_OBS_NDAS="02:00:00"
 WTIME_VX_GRIDSTAT="02:00:00"
 WTIME_VX_POINTSTAT="01:00:00"
+WTIME_VX_ENSGRID="01:00:00"
+WTIME_VX_ENSGRID_MEAN="01:00:00"
+WTIME_VX_ENSGRID_PROB="01:00:00"
+WTIME_VX_ENSPOINT="01:00:00"
+WTIME_VX_ENSPOINT_MEAN="01:00:00"
+WTIME_VX_ENSPOINT_PROB="01:00:00"
 #
 # Maximum number of attempts.
 #
@@ -1477,6 +1661,25 @@ MAXTRIES_VX_GRIDSTAT_03h="1"
 MAXTRIES_VX_GRIDSTAT_06h="1"
 MAXTRIES_VX_GRIDSTAT_24h="1"
 MAXTRIES_VX_POINTSTAT="1"
+MAXTRIES_VX_ENSGRID="1"
+MAXTRIES_VX_ENSGRID_REFC="1"
+MAXTRIES_VX_ENSGRID_RETOP="1"
+MAXTRIES_VX_ENSGRID_03h="1"
+MAXTRIES_VX_ENSGRID_06h="1"
+MAXTRIES_VX_ENSGRID_24h="1"
+MAXTRIES_VX_ENSGRID_MEAN="1"
+MAXTRIES_VX_ENSGRID_PROB="1"
+MAXTRIES_VX_ENSGRID_MEAN_03h="1"
+MAXTRIES_VX_ENSGRID_PROB_03h="1"
+MAXTRIES_VX_ENSGRID_MEAN_06h="1"
+MAXTRIES_VX_ENSGRID_PROB_06h="1"
+MAXTRIES_VX_ENSGRID_MEAN_24h="1"
+MAXTRIES_VX_ENSGRID_PROB_24h="1"
+MAXTRIES_VX_ENSGRID_PROB_REFC="1"
+MAXTRIES_VX_ENSGRID_PROB_RETOP="1"
+MAXTRIES_VX_ENSPOINT="1"
+MAXTRIES_VX_ENSPOINT_MEAN="1"
+MAXTRIES_VX_ENSPOINT_PROB="1"
 #
 #-----------------------------------------------------------------------
 #
@@ -1563,9 +1766,9 @@ NUM_ENS_MEMBERS="1"
 #
 #-----------------------------------------------------------------------
 #
-DO_SHUM="false"
-DO_SPPT="false"
-DO_SKEB="false"
+DO_SHUM="FALSE"
+DO_SPPT="FALSE"
+DO_SKEB="FALSE"
 SHUM_MAG="0.006" #Variable "shum" in input.nml
 SHUM_LSCALE="150000"
 SHUM_TSCALE="21600" #Variable "shum_tau" in input.nml
@@ -1579,7 +1782,7 @@ SKEB_LSCALE="150000"
 SKEB_TSCALE="21600" #Variable "skeb_tau" in input.nml
 SKEB_INT="3600" #Variable "skebint" in input.nml
 SKEB_VDOF="10"
-USE_ZMTNBLCK="false"
+USE_ZMTNBLCK="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -1596,7 +1799,7 @@ USE_ZMTNBLCK="false"
 #
 #-----------------------------------------------------------------------
 #
-DO_SPP="false"
+DO_SPP="FALSE"
 SPP_VAR_LIST=( "pbl" )
 SPP_MAG_LIST=( "0.2" ) #Variable "spp_prt_list" in input.nml
 SPP_LSCALE=( "150000.0" )
@@ -1625,6 +1828,12 @@ HALO_BLEND="10"
 # FV3-LAM grid. This flag will be used in make_ics to modify sfc_data.nc
 # after chgres_cube is run by running the routine process_FVCOM.exe
 #
+# FVCOM_WCSTART:
+# Define if this is a "warm" start or a "cold" start. Setting this to 
+# "warm" will read in sfc_data.nc generated in a RESTART directory.
+# Setting this to "cold" will read in the sfc_data.nc generated from 
+# chgres_cube in the make_ics portion of the workflow.
+#
 # FVCOM_DIR:
 # User defined directory where FVCOM data already interpolated to FV3-LAM
 # grid is located. File name in this path should be "fvcom.nc" to allow
@@ -1637,6 +1846,7 @@ HALO_BLEND="10"
 #------------------------------------------------------------------------
 #
 USE_FVCOM="FALSE"
+FVCOM_WCSTART="cold"
 FVCOM_DIR="/user/defined/dir/to/fvcom/data"
 FVCOM_FILE="fvcom.nc"
 #
@@ -1704,6 +1914,3 @@ OMP_STACKSIZE_RUN_FCST="1024m"
 KMP_AFFINITY_RUN_POST="scatter"
 OMP_NUM_THREADS_RUN_POST="1"
 OMP_STACKSIZE_RUN_POST="1024m"
-#
-#-----------------------------------------------------------------------
-#

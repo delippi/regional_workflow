@@ -8,7 +8,11 @@ function source_util_funcs() {
 #
 #-----------------------------------------------------------------------
 #
-  local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+  if [[ $(uname -s) == Darwin ]]; then
+    local scrfunc_fp=$( greadlink -f "${BASH_SOURCE[0]}" )
+  else
+    local scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+  fi
   local scrfunc_fn=$( basename "${scrfunc_fp}" )
   local scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -48,6 +52,15 @@ function source_util_funcs() {
 #
 #-----------------------------------------------------------------------
 #
+# Source the file that defines MacOS-specific UNIX command-line
+# utilities, that mimic the functionality of the GNU equivalents
+#
+#-----------------------------------------------------------------------
+#
+  . ${bashutils_dir}/define_macos_utilities.sh
+#
+#-----------------------------------------------------------------------
+#
 # Source the file containing the functions that print out messages.
 #
 #-----------------------------------------------------------------------
@@ -79,6 +92,24 @@ function source_util_funcs() {
 #-----------------------------------------------------------------------
 #
   . ${bashutils_dir}/count_files.sh
+#
+#-----------------------------------------------------------------------
+#
+# Source the file containing the function that changes all boolean
+# options to TRUE or FALSE
+#
+#-----------------------------------------------------------------------
+#
+  . ${bashutils_dir}/boolify.sh
+#
+#-----------------------------------------------------------------------
+#
+# Source the file containing the functions that will echo given strings
+# as uppercase or lowercase
+#
+#-----------------------------------------------------------------------
+#
+  . ${bashutils_dir}/change_case.sh
 #
 #-----------------------------------------------------------------------
 #
@@ -189,6 +220,15 @@ function source_util_funcs() {
 #-----------------------------------------------------------------------
 #
   . ${bashutils_dir}/create_symlink_to_file.sh
+#
+#-----------------------------------------------------------------------
+#
+# Source the file containing the function that gets the stripped contents
+# of a bash script or function.
+#
+#-----------------------------------------------------------------------
+#
+  . ${bashutils_dir}/get_bash_file_contents.sh
 
 }
 source_util_funcs

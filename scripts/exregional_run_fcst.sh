@@ -37,7 +37,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -106,62 +106,35 @@ case "$MACHINE" in
     ulimit -a
 
     if [ ${PE_MEMBER01} -gt 24 ];then
-      APRUN="aprun -b -j1 -n${PE_MEMBER01} -N24 -d1 -cc depth"
+      RUN_CMD_FCST="aprun -b -j1 -n${PE_MEMBER01} -N24 -d1 -cc depth"
     else
-      APRUN="aprun -b -j1 -n24 -N24 -d1 -cc depth"
+      RUN_CMD_FCST="aprun -b -j1 -n${PE_MEMBER01} -N${PE_MEMBER01} -d1 -cc depth"
     fi
     ;;
 
   "WCOSS_DELL_P3")
     ulimit -s unlimited
     ulimit -a
-    APRUN="mpirun -l -np ${PE_MEMBER01}"
-    ;;
-
-  "HERA")
-    ulimit -s unlimited
-    ulimit -a
-    APRUN="srun"
-    ;;
-
-  "ORION")
-    ulimit -s unlimited
-    ulimit -a
-    APRUN="srun"
-    ;;
-
-  "JET")
-    ulimit -s unlimited
-    ulimit -a
-    APRUN="srun"
-    ;;
-
-  "ODIN")
-    module list
-    ulimit -s unlimited
-    ulimit -a
-    APRUN="srun -n ${PE_MEMBER01}"
-    ;;
-
-  "CHEYENNE")
-    module list
-    nprocs=$(( NNODES_RUN_FCST*PPN_RUN_FCST ))
-    APRUN="mpirun -np $nprocs"
-    ;;
-
-  "STAMPEDE")
-    module list
-    APRUN="ibrun -np ${PE_MEMBER01}"
+    RUN_CMD_FCST="mpirun -l -np ${PE_MEMBER01}"
     ;;
 
   *)
-    print_err_msg_exit "\
-Run command has not been specified for this machine:
-  MACHINE = \"$MACHINE\"
-  APRUN = \"$APRUN\""
+    source ${MACHINE_FILE}
     ;;
 
 esac
+
+nprocs=$(( NNODES_RUN_FCST*PPN_RUN_FCST ))
+
+if [ -z ${RUN_CMD_FCST:-} ] ; then
+  print_err_msg_exit "\
+  Run command was not set in machine file. \
+  Please set RUN_CMD_FCST for your platform"
+else
+  RUN_CMD_FCST=$(eval echo ${RUN_CMD_FCST})
+  print_info_msg "$VERBOSE" "
+  All executables will be submitted with command \'${RUN_CMD_FCST}\'."
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -383,9 +356,9 @@ for (( i=0; i<${num_symlinks}; i++ )); do
 
   mapping="${CYCLEDIR_LINKS_TO_FIXam_FILES_MAPPING[$i]}"
   symlink=$( printf "%s\n" "$mapping" | \
-             sed -n -r -e "s/${regex_search}/\1/p" )
+             $SED -n -r -e "s/${regex_search}/\1/p" )
   target=$( printf "%s\n" "$mapping" | \
-            sed -n -r -e "s/${regex_search}/\2/p" )
+            $SED -n -r -e "s/${regex_search}/\2/p" )
 
   symlink="${run_dir}/$symlink"
   target="$FIXam/$target"
@@ -393,6 +366,30 @@ for (( i=0; i<${num_symlinks}; i++ )); do
                          relative="${relative_link_flag}"
 
 done
+#
+#-----------------------------------------------------------------------
+#
+# Create links in the current run directory to the MERRA2 aerosol 
+# climatology data files and lookup table for optics properties.
+#
+#-----------------------------------------------------------------------
+#
+if [ "${USE_MERRA_CLIMO}" = "TRUE" ]; then
+  for f_nm_path in ${FIXclim}/*; do
+    f_nm=$( basename "${f_nm_path}" )
+    pre_f="${f_nm%%.*}"
+
+    if [ "${pre_f}" = "merra2" ]; then
+      mnth=$( printf "%s\n" "${f_nm}" | grep -o -P '(?<=2014.m).*(?=.nc)' )
+      symlink="${run_dir}/aeroclim.m${mnth}.nc"
+    else
+      symlink="${run_dir}/${pre_f}.dat"
+    fi
+    target="${f_nm_path}"
+    create_symlink_to_file target="$target" symlink="$symlink" \
+                         relative="${relative_link_flag}"
+  done
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -522,7 +519,7 @@ Call to function to create a diag table file for the current cycle's
 #
 #-----------------------------------------------------------------------
 #
-$APRUN ${FV3_EXEC_FP} || print_err_msg_exit "\
+${RUN_CMD_FCST} ${FV3_EXEC_FP} || print_err_msg_exit "\
 Call to executable to run FV3-LAM forecast returned with nonzero exit
 code."
 #
@@ -559,17 +556,17 @@ if [ ${WRITE_DOPOST} = "TRUE" ]; then
       fhr_d=${fhr}
     fi
 
-    post_time=$( date --utc --date "${yyyymmdd} ${hh} UTC + ${fhr_d} hours + ${fmn} minutes" "+%Y%m%d%H%M" )
+    post_time=$( $DATE_UTIL --utc --date "${yyyymmdd} ${hh} UTC + ${fhr_d} hours + ${fmn} minutes" "+%Y%m%d%H%M" )
     post_mn=${post_time:10:2}
     post_mn_or_null=""
     post_fn_suffix="GrbF${fhr_d}"
     post_renamed_fn_suffix="f${fhr}${post_mn_or_null}.${tmmark}.grib2"
 
-    basetime=$( date --date "$yyyymmdd $hh" +%y%j%H%M )
+    basetime=$( $DATE_UTIL --date "$yyyymmdd $hh" +%y%j%H%M )
     symlink_suffix="_${basetime}f${fhr}${post_mn}"
     fids=( "prslev" "natlev" )
     for fid in "${fids[@]}"; do
-      FID="${fid^^}"
+      FID=$(echo_uppercase $fid)
       post_orig_fn="${FID}.${post_fn_suffix}"
       post_renamed_fn="${NET}.t${cyc}z.${fid}${post_renamed_fn_suffix}"
       mv_vrfy ${run_dir}/${post_orig_fn} ${post_renamed_fn}

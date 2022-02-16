@@ -27,7 +27,7 @@
 #
 #-----------------------------------------------------------------------
 #
-scrfunc_fp=$( readlink -f "${BASH_SOURCE[0]}" )
+scrfunc_fp=$( $READLINK -f "${BASH_SOURCE[0]}" )
 scrfunc_fn=$( basename "${scrfunc_fp}" )
 scrfunc_dir=$( dirname "${scrfunc_fp}" )
 #
@@ -90,43 +90,31 @@ case "$MACHINE" in
 
   "WCOSS_CRAY")
     ulimit -s unlimited
-    APRUN="aprun -b -j1 -n48 -N12 -d1 -cc depth"
+    RUN_CMD_UTILS="aprun -b -j1 -n48 -N12 -d1 -cc depth"
     ;;
 
   "WCOSS_DELL_P3")
     ulimit -s unlimited
-    APRUN="mpirun"
+    RUN_CMD_UTILS="mpirun"
     ;;
 
-  "HERA")
-    ulimit -s unlimited
-    APRUN="srun"
-    ;;
-
-  "ORION")
-    ulimit -s unlimited
-    APRUN="srun"
-    ;;
-
-  "JET")
-    ulimit -s unlimited
-    APRUN="srun"
-    ;;
-
-  "ODIN")
-    APRUN="srun"
-    ;;
-
-  "CHEYENNE")
-    nprocs=$(( NNODES_MAKE_LBCS*PPN_MAKE_LBCS ))
-    APRUN="mpirun -np $nprocs"
-    ;;
-
-  "STAMPEDE")
-    APRUN="ibrun"
+  *)
+    source ${MACHINE_FILE}
     ;;
 
 esac
+
+nprocs=$(( NNODES_MAKE_LBCS*PPN_MAKE_LBCS ))
+
+if [ -z ${RUN_CMD_UTILS:-} ] ; then
+  print_err_msg_exit "\
+  Run command was not set in machine file. \
+  Please set RUN_CMD_UTILS for your platform"
+else
+  RUN_CMD_UTILS=$(eval echo ${RUN_CMD_UTILS})
+  print_info_msg "$VERBOSE" "
+  All executables will be submitted with command \'${RUN_CMD_UTILS}\'."
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -171,6 +159,7 @@ case "${CCPP_PHYS_SUITE}" in
   "FV3_GSD_SAR" | \
   "FV3_RRFS_v1alpha" | \
   "FV3_RRFS_v1beta" | \
+  "FV3_GFS_v15_thompson_mynn_lam3km" | \
   "FV3_HRRR" )
     if [ "${EXTRN_MDL_NAME_LBCS}" = "RAP" ] || \
        [ "${EXTRN_MDL_NAME_LBCS}" = "HRRR" ]; then
@@ -438,7 +427,7 @@ list file has not specified for this external LBC model (EXTRN_MDL_NAME_LBCS):
   dd="${EXTRN_MDL_CDATE:6:2}"
   hh="${EXTRN_MDL_CDATE:8:2}"
 
-  cdate_crnt_fhr=$( date --utc --date "${yyyymmdd} ${hh} UTC + ${fhr} hours" "+%Y%m%d%H" )
+  cdate_crnt_fhr=$( $DATE_UTIL --utc --date "${yyyymmdd} ${hh} UTC + ${fhr} hours" "+%Y%m%d%H" )
 #
 # Get the month, day, and hour corresponding to the current forecast time
 # of the the external model.
@@ -516,14 +505,14 @@ $settings"
 #-----------------------------------------------------------------------
 #
 # NOTE:
-# Often when the chgres_cube.exe run fails, it still returns a zero re-
-# turn code, so the failure isn't picked up the the logical OR (||) be-
-# low.  That should be fixed.  This might be due to the APRUN command -
-# maybe that is returning a zero exit code even though the exit code
-# of chgres_cube is nonzero.
-# A similar thing happens in the forecast task.
+# Often when the chgres_cube.exe run fails, it still returns a zero
+# return code, so the failure isn't picked up the the logical OR (||)
+# below.  That should be fixed.  This might be due to the RUN_CMD_UTILS
+# command - maybe that is returning a zero exit code even though the
+# exit code of chgres_cube is nonzero.  A similar thing happens in the
+# forecast task.
 #
-  ${APRUN} ${exec_fp} || \
+  ${RUN_CMD_UTILS} ${exec_fp} || \
     print_err_msg_exit "\
 Call to executable (exec_fp) to generate lateral boundary conditions (LBCs)
 file for the FV3-LAM for forecast hour fhr failed:
