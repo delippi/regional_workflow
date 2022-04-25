@@ -145,7 +145,7 @@ NCORES_RUN_ANAL=240
 WTIME_RUN_ANAL="01:00:00"
 HYBENSMEM_NMIN=66
 HALO_BLEND=20
-IO_LAYOUT_Y=4
+IO_LAYOUT_Y=1
 PPN_RUN_REF2TTEN=1
 PPN_RUN_NONVARCLDANL=${IO_LAYOUT_Y}
 
@@ -204,6 +204,7 @@ MODEL="RTMA_CONUS" #used by NCL
 RUN="RTMA_CONUS"
 COMINgfs=""
 OBSPATH="/lfs4/BMC/wrfruc/gge/rtma/wcoss_obs"
+BERROR_FN="rrfs_glb_berror.l127y194.f77"
 
 STMP="/lfs4/BMC/nrtrr/NCO_dirs/stmp"  # Path to directory STMP that mostly contains input files.
 PTMP="/lfs4/BMC/nrtrr/NCO_dirs/ptmp"  # Path to directory STMP that mostly contains input files.
