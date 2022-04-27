@@ -7795,7 +7795,6 @@ tmpl4_0
 UEID
 NCEP
 ?
-?
 level_free_convection
 0
 ?
@@ -7832,7 +7831,6 @@ VEID_ON_EFL
 tmpl4_0
 VEID
 NCEP
-?
 ?
 level_free_convection
 0
@@ -7871,7 +7869,6 @@ tmpl4_0
 E3KH
 NCEP
 ?
-?
 level_free_convection
 0
 ?
@@ -7908,7 +7905,6 @@ STPC_ON_EFL
 tmpl4_0
 STPC
 NCEP
-?
 ?
 level_free_convection
 0
@@ -7947,7 +7943,6 @@ tmpl4_0
 SIGT
 NCEP
 ?
-?
 level_free_convection
 0
 ?
@@ -7984,7 +7979,6 @@ SCCP_ON_EFL
 tmpl4_0
 SCCP
 NCEP
-?
 ?
 level_free_convection
 0
@@ -8023,7 +8017,6 @@ tmpl4_0
 SIGH
 NCEP
 ?
-?
 level_free_convection
 0
 ?
@@ -8060,7 +8053,6 @@ MLFC_ON_EFL
 tmpl4_0
 MLFC
 NCEP
-?
 ?
 level_free_convection
 0
