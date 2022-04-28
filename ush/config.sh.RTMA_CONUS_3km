@@ -259,6 +259,6 @@ if [[ "$MACHINE" == "wcoss_dell_p3" ]]; then
   NWGES="/gpfs/dell2/ptmp/${USER}/nwges"
 fi
 # Wait longer for rrfsdas
-if [[ "$MACHINE" == "jet" ]] && [[ $regional_ensemble_option -eq 5 ]] ; then
-  START_TIME_ANAL="5:00:00"
-fi
+#if [[ "$MACHINE" == "jet" ]] && [[ $regional_ensemble_option -eq 5 ]] ; then
+#  START_TIME_ANAL="5:00:00"
+#fi
