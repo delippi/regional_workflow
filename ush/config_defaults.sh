@@ -581,6 +581,7 @@ ARCHIVE_CYCLEDEF="00 01 01 01 2100 *"
 #       (need to follow FORTRAN namelist convetion)
 #-------------------------------------------------------------------------------------
 # &SETUP  and &BKGERR
+l_obsprvdiag=.false.
 diag_radardbz=.true.
 write_diag_2=.false.
 bkgerr_vs=1.0

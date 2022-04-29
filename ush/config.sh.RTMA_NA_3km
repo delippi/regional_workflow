@@ -75,6 +75,7 @@ DO_DACYCLE="TRUE"
 #-------------------------------------------------------------------------------------
 #
 # &SETUP  and &BKGERR
+l_obsprvdiag=.true.
 diag_radardbz=.false.
 write_diag_2=.true.
 bkgerr_vs=0.125                        #1.0 is default setting

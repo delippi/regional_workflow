@@ -16,7 +16,7 @@ gsi_namelist="
    l4densvar=.false.,nhr_obsbin=3,
    use_gfs_nemsio=.false.,use_gfs_ncio=.true.,reset_bad_radbc=.true.,
    netcdf_diag=.false.,
-   l_obsprvdiag=.true.,
+   l_obsprvdiag=${l_obsprvdiag},
  /     
  &GRIDOPTS
    fv3_regional=.true.,grid_ratio_fv3_regional=${grid_ratio_fv3},nvege_type=20,

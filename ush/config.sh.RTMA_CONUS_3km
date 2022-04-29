@@ -71,6 +71,7 @@ RADARREFL_TIMELEVEL=(0)
 #-------------------------------------------------------------------------------------
 #
 # &SETUP  and &BKGERR
+l_obsprvdiag=.true.
 diag_radardbz=.false.
 write_diag_2=.true.
 bkgerr_vs=0.125                        #1.0 is default setting
@@ -237,8 +238,8 @@ if [[ "$MACHINE" == "wcoss_dell_p3" ]]; then
   SFCOBS_USELIST="/gpfs/dell2/emc/modeling/noscrub/Edward.Colon/FixData/obsuselist/mesonet_uselists"
 
   WTIME_RUN_ANAL="00:30:00"
-  NNODES_RUN_ANAL="70"
-  PPN_RUN_ANAL="7"
+  NNODES_RUN_ANAL="28"
+  PPN_RUN_ANAL="14"
 
   LAYOUT_X=42
   LAYOUT_Y=40
