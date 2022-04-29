@@ -233,7 +233,7 @@ if [[ "$MACHINE" == "wcoss_dell_p3" ]]; then
   PARTITION_ANALYSIS=""
   PARTITION_GRAPHICS=""
   PARTITION_WGRIB2=""
-  DO_BUFRSND="TRUE"
+  DO_BUFRSND="FALSE"
 
   OBSPATH_NSSLMOSIAC="/gpfs/dell1/nco/ops/dcom/prod/ldmdata/obs/upperair/mrms/conus/MergedReflectivityQC"
   AIRCRAFT_REJECT="/gpfs/dell2/emc/modeling/noscrub/Edward.Colon/FixData/obsuselist/amdar_reject_lists"
