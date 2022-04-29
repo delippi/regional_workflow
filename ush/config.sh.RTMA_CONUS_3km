@@ -178,6 +178,7 @@ NCORES_PER_NODE=40 #kjet
 FG_ROOTDIR="/lfs4/BMC/nrtrr/NCO_dirs/nwges/para/RRFS_CONUS" #only needed by RTMA
 DT_ATMOS=1
 #adjust to low priority queue and possible preemption, slurm socket error, etc
+MAXTRIES_RUN_PREPSTART="3"
 MAXTRIES_RUN_FCST="3"
 MAXTRIES_ANAL_GSI="3"
 MAXTRIES_RUN_POST="3"
