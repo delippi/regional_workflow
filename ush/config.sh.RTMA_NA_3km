@@ -101,7 +101,7 @@ i_use_2mT4B=0
 #-------------------------------------------------------------------------------------
 #
 BERROR_FN="berror.rtma"      #under $FIX_GSI
-ANAVINFO_FN="anavinfo.fv3lam_hrrr"
+ANAVINFO_FN="anavinfo.rtma"
 CONVINFO_FN="convinfo.rtma"
 OBERROR_FN="errtable.rtma"
 HYBENSINFO_FN="hybens_info.rtma"
