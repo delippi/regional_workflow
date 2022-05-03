@@ -586,6 +586,7 @@ diag_radardbz=.true.
 write_diag_2=.false.
 bkgerr_vs=1.0
 bkgerr_hzscl=0.373,0.746,1.5   #no trailing ,
+usenewgfsberror=.true.
 
 # &HYBRID_ENSEMBLE
 readin_localization=.true.     #if true, it overwrites the "beta1_inv/ens_h/ens_v" setting

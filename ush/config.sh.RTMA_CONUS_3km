@@ -78,6 +78,7 @@ write_diag_2=.true.
 bkgerr_vs=0.125                        #1.0 is default setting
 #bkgerr_hzscl=0.373,0.746,1.5         #default setting, no trailing ,
 bkgerr_hzscl=0.046625,0.09325,0.1875  #hzscl/8
+usenewgfsberror=.false.
 
 # &HYBRID_ENSEMBLE
 readin_localization=.true.     #if true, it overwrites the "beta1_inv/ens_h/ens_v" setting
@@ -216,7 +217,6 @@ MODEL="RTMA_CONUS" #used by NCL
 RUN="RTMA_CONUS"
 COMINgfs=""
 OBSPATH="/lfs4/BMC/wrfruc/gge/rtma/wcoss_obs"
-BERROR_FN="rrfs_glb_berror.l127y194.f77"
 
 STMP="/lfs4/BMC/nrtrr/NCO_dirs/stmp"  # Path to directory STMP that mostly contains input files.
 PTMP="/lfs4/BMC/nrtrr/NCO_dirs/ptmp"  # Path to directory STMP that mostly contains input files.
