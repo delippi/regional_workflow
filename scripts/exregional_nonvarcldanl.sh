@@ -307,6 +307,9 @@ cat << EOF > gsiparm.anl
    i_lightpcp=1,
    i_gsdqc=2,
    l_saturate_bkCloud=.true.,
+   i_T_Q_adjust=${i_T_Q_adjust},
+   l_rtma3d=${l_rtma3d}
+   i_precip_vertical_check=${i_precip_vertical_check}
  /
 EOF
 
