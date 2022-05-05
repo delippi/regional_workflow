@@ -95,9 +95,9 @@ l_PBL_pseudo_SurfobsT=.false.
 l_PBL_pseudo_SurfobsQ=.false
 i_use_2mQ4B=0
 i_use_2mT4B=0
-i_T_Q_adjust=2
+i_T_Q_adjust=1
 l_rtma3d=.true.
-i_precip_vertical_check=0
+i_precip_vertical_check=3
 #-------------------------------------------------------------------------------------
 #
 BERROR_FN="berror.rtma"      #under $FIX_GSI
