@@ -144,6 +144,7 @@ export METPLUS_CONF
 export MET_CONFIG
 export MODEL
 export NET
+export POST_OUTPUT_DOMAIN_NAME
 export LOG_SUFFIX
 
 #
@@ -155,11 +156,11 @@ export LOG_SUFFIX
 #
 if [ ${VAR} == "APCP" ]; then
   export acc="${ACCUM}h"
-  ${METPLUS_PATH}/ush/master_metplus.py \
+  ${METPLUS_PATH}/ush/run_metplus.py \
     -c ${METPLUS_CONF}/common.conf \
     -c ${METPLUS_CONF}/GridStat_${VAR}${acc}_prob.conf
 else
-  ${METPLUS_PATH}/ush/master_metplus.py \
+  ${METPLUS_PATH}/ush/run_metplus.py \
     -c ${METPLUS_CONF}/common.conf \
     -c ${METPLUS_CONF}/GridStat_${VAR}_prob.conf
 fi

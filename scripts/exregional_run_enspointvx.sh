@@ -135,13 +135,14 @@ export METPLUS_CONF
 export MET_CONFIG
 export MODEL
 export NET
+export POST_OUTPUT_DOMAIN_NAME
 export NUM_ENS_MEMBERS
 
-${METPLUS_PATH}/ush/master_metplus.py \
+${METPLUS_PATH}/ush/run_metplus.py \
   -c ${METPLUS_CONF}/common.conf \
   -c ${METPLUS_CONF}/EnsembleStat_conus_sfc.conf
 
-${METPLUS_PATH}/ush/master_metplus.py \
+${METPLUS_PATH}/ush/run_metplus.py \
   -c ${METPLUS_CONF}/common.conf \
   -c ${METPLUS_CONF}/EnsembleStat_upper_air.conf
 

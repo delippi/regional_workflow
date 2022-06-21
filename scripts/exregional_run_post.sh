@@ -92,42 +92,11 @@ export OMP_STACKSIZE=${OMP_STACKSIZE_RUN_POST}
 #
 #-----------------------------------------------------------------------
 #
-case "$MACHINE" in
-
-  "WCOSS_CRAY")
-
-# Specify computational resources.
-    export NODES=2
-    export ntasks=48
-    export ptile=24
-    export threads=1
-    export MP_LABELIO=yes
-    export OMP_NUM_THREADS=$threads
-
-    RUN_CMD_POST="aprun -j 1 -n${ntasks} -N${ptile} -d${threads} -cc depth"
-    ;;
-
-  "WCOSS_DELL_P3")
-
-# Specify computational resources.
-    export NODES=2
-    export ntasks=48
-    export ptile=24
-    export threads=1
-    export MP_LABELIO=yes
-    export OMP_NUM_THREADS=$threads
-
-    RUN_CMD_POST="mpirun"
-    ;;
-
-  *)
-    source ${MACHINE_FILE}
-    ;;
-
-esac
+source $USHDIR/source_machine_file.sh
+eval ${PRE_TASK_CMDS}
 
 nprocs=$(( NNODES_RUN_POST*PPN_RUN_POST ))
-if [ -z ${RUN_CMD_POST:-} ] ; then
+if [ -z "${RUN_CMD_POST:-}" ] ; then
   print_err_msg_exit "\
   Run command was not set in machine file. \
   Please set RUN_CMD_POST for your platform"
@@ -171,6 +140,24 @@ temporary work directory (tmp_dir):
 fi
 cp_vrfy ${post_config_fp} ./postxconfig-NT.txt
 cp_vrfy ${UPP_DIR}/parm/params_grib2_tbl_new .
+if [ ${USE_CRTM} = "TRUE" ]; then
+  cp_vrfy ${CRTM_DIR}/fix/EmisCoeff/IR_Water/Big_Endian/Nalli.IRwater.EmisCoeff.bin ./
+  cp_vrfy ${CRTM_DIR}/fix/EmisCoeff/MW_Water/Big_Endian/FAST*.bin ./
+  cp_vrfy ${CRTM_DIR}/fix/EmisCoeff/IR_Land/SEcategory/Big_Endian/NPOESS.IRland.EmisCoeff.bin ./
+  cp_vrfy ${CRTM_DIR}/fix/EmisCoeff/IR_Snow/SEcategory/Big_Endian/NPOESS.IRsnow.EmisCoeff.bin ./
+  cp_vrfy ${CRTM_DIR}/fix/EmisCoeff/IR_Ice/SEcategory/Big_Endian/NPOESS.IRice.EmisCoeff.bin ./
+  cp_vrfy ${CRTM_DIR}/fix/AerosolCoeff/Big_Endian/AerosolCoeff.bin ./
+  cp_vrfy ${CRTM_DIR}/fix/CloudCoeff/Big_Endian/CloudCoeff.bin ./
+  cp_vrfy ${CRTM_DIR}/fix/SpcCoeff/Big_Endian/*.bin ./
+  cp_vrfy ${CRTM_DIR}/fix/TauCoeff/ODPS/Big_Endian/*.bin ./
+  print_info_msg "
+====================================================================
+Copying the external CRTM fix files from CRTM_DIR to the temporary
+work directory (tmp_dir):
+  CRTM_DIR = \"${CRTM_DIR}\"
+  tmp_dir = \"${tmp_dir}\"
+===================================================================="
+fi
 #
 #-----------------------------------------------------------------------
 #
@@ -185,18 +172,7 @@ cyc=$hh
 #
 #-----------------------------------------------------------------------
 #
-# The tmmark is a reference value used in real-time, DA-enabled NCEP models.
-# It represents the delay between the onset of the DA cycle and the free
-# forecast.  With no DA in the SRW App at the moment, it is hard-wired to
-# tm00 for now. 
-#
-#-----------------------------------------------------------------------
-#
-tmmark="tm00"
-#
-#-----------------------------------------------------------------------
-#
-# Create a text file (itag) containing arguments to pass to the post-
+# Create the namelist file (itag) containing arguments to pass to the post-
 # processor's executable.
 #
 #-----------------------------------------------------------------------
@@ -236,7 +212,7 @@ post_dd=${post_time:6:2}
 post_hh=${post_time:8:2}
 post_mn=${post_time:10:2}
 #
-# Create the input text file to the post-processor executable.
+# Create the input namelist file to the post-processor executable.
 #
 if [ ${FCST_MODEL} = "fv3gfs_aqm" ]; then
   post_itag_add="aqfcmaq_on=.true.,"
@@ -244,12 +220,14 @@ else
   post_itag_add=""
 fi
 cat > itag <<EOF
-${dyn_file}
-netcdf
-grib2
-${post_yyyy}-${post_mm}-${post_dd}_${post_hh}:${post_mn}:00
-FV3R
-${phy_file}
+&model_inputs
+fileName='${dyn_file}'
+IOFORM='netcdf'
+grib='grib2'
+DateStr='${post_yyyy}-${post_mm}-${post_dd}_${post_hh}:${post_mn}:00'
+MODELNAME='FV3R'
+fileNameFlux='${phy_file}'
+/
 
  &NAMPGB
  KPO=47,PO=1000.,975.,950.,925.,900.,875.,850.,825.,800.,775.,750.,725.,700.,675.,650.,625.,600.,575.,550.,525.,500.,475.,450.,425.,400.,375.,350.,325.,300.,275.,250.,225.,200.,175.,150.,125.,100.,70.,50.,30.,20.,10.,7.,5.,3.,2.,1.,${post_itag_add}
@@ -311,7 +289,7 @@ if [ "${post_mn}" != "00" ]; then
 fi
 
 post_fn_suffix="GrbF${post_fhr}${dot_post_mn_or_null}"
-post_renamed_fn_suffix="f${fhr}${post_mn_or_null}.${tmmark}.grib2"
+post_renamed_fn_suffix="f${fhr}${post_mn_or_null}.${POST_OUTPUT_DOMAIN_NAME}.grib2"
 #
 # For convenience, change location to postprd_dir (where the final output
 # from UPP will be located).  Then loop through the two files that UPP
@@ -325,7 +303,7 @@ fids=( "prslev" "natlev" )
 for fid in "${fids[@]}"; do
   FID=$(echo_uppercase $fid)
   post_orig_fn="${FID}.${post_fn_suffix}"
-  post_renamed_fn="${NET}.t${cyc}z.${fid}${post_renamed_fn_suffix}"
+  post_renamed_fn="${NET}.t${cyc}z.${fid}.${post_renamed_fn_suffix}"
   mv_vrfy ${tmp_dir}/${post_orig_fn} ${post_renamed_fn}
   create_symlink_to_file target="${post_renamed_fn}" \
                          symlink="${FID}${symlink_suffix}" \
