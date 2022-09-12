@@ -1,0 +1,95 @@
+# This workflow runs the CI for the Regional Workflow End to End Tests
+name: Run WE2E Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches:
+      - rrfs_ci
+    types: 
+      - labeled
+
+# Use custom shell with -l so .bash_profile is sourced which loads intel/oneapi/setvars.sh, and lmod path 
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  
+# The run_id is only available in this worfklow if the workflow which builds the SRWA in build_SRWA.yml was successful.
+  Configure_and_Submit_WE2E_tests:
+    name: Configure experiment matrix & submit WE2E tests
+    runs-on: self-hosted
+    if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
+    outputs: 
+      run-id: ${{ steps.get_run_id.outputs.run-id }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+    steps:
+# As this currently stands, there is no capability to test concurrent PRs via this workflow (& build.SRWA.yaml), a codeowner must run the C.I. framework one PR at a time.
+# Currently, there is no reliable way of obtaining a PR number from a workflow not triggered by a PR event. (We are triggering workflows by attaching labels).         
+# A future resolution would be to set the PR number as part of the path where the SRW App is cloned and built (in build.SRWA.yaml), then obtain the PR number from this workflow, and enter the appropriate directory containing the associated build.
+      - name: Set the run_id for use in path of SRWA build (Fail safe for SRW App Build Failure)
+        id: get_run_id
+        run: |
+          FILE="${{ github.workspace }}/run_id.txt"
+          if [[ -f "$FILE" ]]; then 
+            echo "::set-output name=run-id::$(cat ${{ github.workspace}}/run_id.txt)"
+          else 
+            echo "SRWA Build failed"
+            exit 1 
+          fi
+
+      - name: Set matrix of tests from machine_suites/ci.txt
+        id: set-matrix
+        run: | 
+          echo "::set-output name=matrix::$(cat ufs-srweather-app-${{ steps.get_run_id.outputs.run-id }}/regional_workflow/tests/WE2E/machine_suites/ci.txt | jq -R -s -c 'split("\n")[:-1]')"
+          echo 
+
+      - name: Create experiment directory
+        run: |
+          mkdir -p /scratch1/ci-WE2E-test/${{ github.run_id }}
+
+      - name: Submit all experiments (WE2E tests) 
+        run: | 
+          cd ufs-srweather-app-${{ steps.get_run_id.outputs.run-id }}/regional_workflow/tests/WE2E/
+          module use -a /scratch1/miniconda3/contrib_miniconda3/modulefiles
+          module load miniconda3/4.11.0
+          conda activate regional_workflow
+          ./run_WE2E_tests.sh \
+            tests_file=machine_suites/ci.txt \
+            machine=aws \
+            account=account \
+            expt_basedir=/scratch1/ci-WE2E-test/${{ github.run_id }} \
+            exec_subdir=bin_intel/bin \
+            cron_relaunch_intvl_mnts=01 \
+            build_mod_fn=build_aws_intel
+
+      - name: Check the status of all experiments
+        run: |
+          echo "Check Workflow Generation/Status"
+          cd ufs-srweather-app-${{ steps.get_run_id.outputs.run-id }}/regional_workflow/tests/WE2E/
+          ./get_expts_status.sh expts_basedir=/scratch1/ci-WE2E-test/${{ github.run_id }}
+    
+  check-each-we2e-status: 
+    name: Check status of all WE2E Runs
+    needs: [ Configure_and_Submit_WE2E_tests ]
+    runs-on: self-hosted
+    if: ${{ github.event.label.name == 'ci-aws-intel-WE' }}
+    strategy:
+        fail-fast: false
+        matrix:
+            WE2Etest: ${{ fromJson(needs.Configure_and_Submit_WE2E_tests.outputs.matrix) }}
+
+    steps: 
+      - name: Check if tasks were initially submitted  
+        run: |
+          cd /scratch1/ci-WE2E-test/${{ github.run_id }}/${{ matrix.WE2Etest }}
+          sleep 60
+          tail -40 log.launch_FV3LAM_wflow
+
+      - name: Exit on SUCCESS or FAILURE 
+        run: | 
+          echo "Execute script that checks for workflow status to change from IN PROGRESS to SUCCESS/FAILURE"
+          cd ufs-srweather-app-${{ needs.Configure_and_Submit_WE2E_tests.outputs.run-id }}/regional_workflow/tests/WE2E/
+          ./get_single_expt_status.sh expts_basedir=/scratch1/ci-WE2E-test/${{ github.run_id }} expt_name=${{ matrix.WE2Etest }}
