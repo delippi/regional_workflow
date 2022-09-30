@@ -48,8 +48,6 @@ TILE_LABELS="CONUS NE NC NW SE SC SW"
 TILE_SETS="full NE NC NW SE SC SW"
 
 DO_ENSEMBLE="TRUE"
-DO_RECENTER="TRUE"
-DO_ENS_GRAPHICS="TRUE"
 #DO_DACYCLE="TRUE"
 #DO_SURFACE_CYCLE="TRUE"
 #DO_SPINUP="TRUE"
@@ -170,6 +168,23 @@ if [[ $MACHINE == "wcoss_dell_p3" ]] ; then
   FV3GFS_FILE_FMT_LBCS="netcdf"
 fi
 
+if [[ ${DO_ENSEMBLE}  == "TRUE" ]]; then
+   NUM_ENS_MEMBERS=30
+#   DO_SPPT=TRUE
+#   DO_SPP=TRUE
+#   SPPT_MAG=0.5
+#   DO_ENSCONTROL="TRUE"
+   DO_GSIOBSERVER="TRUE"
+   DO_ENKFUPDATE="TRUE"
+   DO_RECENTER="TRUE"
+   DO_ENS_GRAPHICS="TRUE"
+   ARCHIVEDIR="/5year/BMC/wrfruc/rrfs_ens"
+   NNODES_RUN_RECENTER="2"
+   PPN_RUN_RECENTER="15"
+   CLEAN_OLDFCST_HRS="48"
+   CLEAN_OLDSTMPPOST_HRS="48"
+fi
+
 RUN="RRFS_conus_3km"
 COMINgfs=""
 
@@ -181,17 +196,5 @@ NWGES="YourOwnSpace/NCO_dirs/nwges"  # Path to directory NWGES that save boundar
 if [[ ${DO_RECENTER}  == "TRUE" ]]; then
   ENSCTRL_STMP="YourOwnSpace/NCO_dirs/stmp"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
   ENSCTRL_NWGES="YourOwnSpace/NCO_dirs/nwges"  # Path to directory STMP that mostly contains control input files for ensemble recentering.
-fi
-
-if [[ ${DO_ENSEMBLE}  == "TRUE" ]]; then
-   NUM_ENS_MEMBERS=30
-#   DO_SPPT=TRUE
-#   SPPT_MAG=0.5
-#   DO_ENSCONTROL="TRUE"
-   DO_GSIOBSERVER="TRUE"
-   DO_ENKFUPDATE="TRUE"
-   ARCHIVEDIR="/5year/BMC/wrfruc/rrfs_ens"
-   NNODES_RUN_RECENTER="2"
-   PPN_RUN_RECENTER="15"
 fi
 

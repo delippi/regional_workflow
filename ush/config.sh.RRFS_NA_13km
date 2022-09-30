@@ -54,6 +54,7 @@ DO_SOIL_ADJUST="TRUE"
 DO_RADDA="FALSE"
 LBCS_ICS_ONLY="FALSE"
 
+grid_ratio_fv3=1.0
 
 QUILTING="TRUE"
 CCPP_PHYS_SUITE="FV3_RAP"
@@ -97,8 +98,13 @@ for i in {0..23..3}; do FCST_LEN_HRS_CYCLES[$i]=12; done
 DA_CYCLE_INTERV="1"
 RESTART_INTERVAL="1"
 
+DT_ATMOS=90
+
 NCORES_RUN_ANAL=240
 HALO_BLEND=20
+
+PRINT_DIFF_PGR="TRUE"
+USE_IO_NETCDF="TRUE"
 
 WTIME_RUN_FCST="02:30:00"
 WTIME_MAKE_LBCS="02:30:00"
@@ -118,6 +124,7 @@ TAG="RRFS_dev1_NA_13km"
 
 USE_CUSTOM_POST_CONFIG_FILE="TRUE"
 TESTBED_FIELDS_FN="testbed_fields_bgdawp.txt"
+TESTBED_FIELDS_FN2="testbed_fields_bgrd3d.txt"
 CUSTOM_POST_CONFIG_FP="$(cd "$( dirname "${BASH_SOURCE[0]}" )/.." &>/dev/null&&pwd)/fix/upp/postxconfig-NT-fv3lam_rrfs.txt"
 CUSTOM_POST_PARAMS_FP="$(cd "$( dirname "${BASH_SOURCE[0]}" )/.." &>/dev/null&&pwd)/fix/upp/params_grib2_tbl_new"
 ARCHIVEDIR="/5year/BMC/wrfruc/rrfs_na_13km_dev1"

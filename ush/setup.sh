@@ -272,6 +272,46 @@ fi
 #
 #-----------------------------------------------------------------------
 #
+# Make sure that DO_SPP is set to a valid value.
+#
+#-----------------------------------------------------------------------
+#
+check_var_valid_value "DO_SPP" "valid_vals_DO_SPP"
+#
+# Set DO_SPP to either "TRUE" or "FALSE" so we don't
+# have to consider other valid values later on.
+#
+DO_SPP=${DO_SPP^^}
+if [ "${DO_SPP}" = "TRUE" ] || \
+   [ "${DO_SPP}" = "YES" ]; then
+  DO_SPP="TRUE"
+elif [ "${DO_SPP}" = "FALSE" ] || \
+     [ "${DO_SPP}" = "NO" ]; then
+  DO_SPP="FALSE"
+fi
+#
+#-----------------------------------------------------------------------
+#
+# Make sure that DO_LSM_SPP is set to a valid value.
+#
+#-----------------------------------------------------------------------
+#
+check_var_valid_value "DO_LSM_SPP" "valid_vals_DO_LSM_SPP"
+#
+# Set DO_LSM_SPP to either "TRUE" or "FALSE" so we don't
+# have to consider other valid values later on.
+#
+DO_LSM_SPP=${DO_LSM_SPP^^}
+if [ "${DO_LSM_SPP}" = "TRUE" ] || \
+   [ "${DO_LSM_SPP}" = "YES" ]; then
+  DO_LSM_SPP="TRUE"
+elif [ "${DO_LSM_SPP}" = "FALSE" ] || \
+     [ "${DO_LSM_SPP}" = "NO" ]; then
+  DO_LSM_SPP="FALSE"
+fi
+#
+#-----------------------------------------------------------------------
+#
 # Make sure that DO_SKEB is set to a valid value.
 #
 #-----------------------------------------------------------------------
@@ -309,6 +349,87 @@ fi
 if [ "${DO_SPPT}" = "FALSE" ]; then
   SPPT_MAG=-999.0
 fi
+#
+#-----------------------------------------------------------------------
+#
+# If running with SPP in MYNN PBL, MYNN SFC, GSL GWD, Thompson MP, or
+# RRTMG, count the number of entries in SPP_VAR_LIST to correctly set
+# N_VAR_SPP, otherwise set it to zero.
+#
+#-----------------------------------------------------------------------
+#
+N_VAR_SPP=0
+if [ "${DO_SPP}" = "TRUE" ]; then
+  N_VAR_SPP=${#SPP_VAR_LIST[@]}
+fi
+#
+#-----------------------------------------------------------------------
+#
+# If running with Noah or RUC-LSM SPP, count the number of entries in
+# LSM_SPP_VAR_LIST to correctly set N_VAR_LNDP, otherwise set it to zero.
+# Also set LNDP_TYPE to 2 for LSM SPP, otherwise set it to zero.  Finally,
+# initialize an "FHCYC_LSM_SPP" variable to 0 and set it to 999 if LSM SPP
+# is turned on.  This requirement is necessary since LSM SPP cannot run with
+# FHCYC=0 at the moment, but FHCYC cannot be set to anything less than the
+# length of the forecast either.  A bug fix will be submitted to
+# ufs-weather-model soon, at which point, this requirement can be removed
+# from regional_workflow.
+#
+#-----------------------------------------------------------------------
+#
+N_VAR_LNDP=0
+LNDP_TYPE=0
+FHCYC_LSM_SPP_OR_NOT=0
+if [ "${DO_LSM_SPP}" = "TRUE" ]; then
+  N_VAR_LNDP=${#LSM_SPP_VAR_LIST[@]}
+  LNDP_TYPE=2
+  FHCYC_LSM_SPP_OR_NOT=999
+fi
+#
+#-----------------------------------------------------------------------
+#
+# If running with SPP, confirm that each SPP-related namelist value
+# contains the same number of entries as N_VAR_SPP (set above to be equal
+# to the number of entries in SPP_VAR_LIST).
+#
+#-----------------------------------------------------------------------
+#
+if [ "${DO_SPP}" = "TRUE" ]; then
+  if [ "${#SPP_MAG_LIST[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#SPP_LSCALE[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#SPP_TSCALE[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#SPP_SIGTOP1[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#SPP_SIGTOP2[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#SPP_STDDEV_CUTOFF[@]}" != "${N_VAR_SPP}" ] || \
+     [ "${#ISEED_SPP[@]}" != "${N_VAR_SPP}" ]; then
+  print_err_msg_exit "\
+All MYNN PBL, MYNN SFC, GSL GWD, Thompson MP, or RRTMG SPP-related namelist
+variables set in ${CONFIG_FN} must be equal in number of entries to what is
+found in SPP_VAR_LIST:
+  Number of entries in SPP_VAR_LIST = \"${#SPP_VAR_LIST[@]}\""
+  fi
+fi
+#
+#-----------------------------------------------------------------------
+#
+# If running with LSM SPP, confirm that each LSM SPP-related namelist
+# value contains the same number of entries as N_VAR_LNDP (set above to
+# be equal to the number of entries in LSM_SPP_VAR_LIST).
+#
+#-----------------------------------------------------------------------
+#
+if [ "${DO_LSM_SPP}" = "TRUE" ]; then
+  if [ "${#LSM_SPP_MAG_LIST[@]}" != "${N_VAR_LNDP}" ] || \
+     [ "${#LSM_SPP_LSCALE[@]}" != "${N_VAR_LNDP}" ] || \
+     [ "${#LSM_SPP_TSCALE[@]}" != "${N_VAR_LNDP}" ]; then
+  print_err_msg_exit "\
+All Noah or RUC-LSM SPP-related namelist variables (except ISEED_LSM_SPP)
+set in ${CONFIG_FN} must be equal in number of entries to what is found in
+SPP_VAR_LIST:
+  Number of entries in SPP_VAR_LIST = \"${#LSM_SPP_VAR_LIST[@]}\""
+  fi
+fi
+
 #
 #-----------------------------------------------------------------------
 #
@@ -359,6 +480,9 @@ optionList[8]=DO_UPDATE_BC
 optionList[9]=DO_RADDA
 optionList[10]=DO_RECENTER
 optionList[11]=DO_BUFRSND
+optionList[12]=USE_RRFSE_ENS
+optionList[13]=USE_IO_NETCDF
+optionList[14]=DO_JEDI_ENVAR_IODA
 
 obs_number=${#optionList[@]}
 for (( i=0; i<${obs_number}; i++ ));
@@ -414,6 +538,7 @@ case $MACHINE in
     QUEUE_FCST=${QUEUE_FCST:-"dev"}
     QUEUE_ANALYSIS=${QUEUE_ANALYSIS:-"dev"}
     QUEUE_WGRIB2=${QUEUE_WGRIB2:-"dev"}
+    QUEUE_POST=${QUEUE_POST:-"dev"}
     ;;
 
   "HERA")
@@ -425,6 +550,8 @@ case $MACHINE in
     QUEUE_HPSS=${QUEUE_HPSS:-"batch"}
     PARTITION_FCST=${PARTITION_FCST:-"hera"}
     QUEUE_FCST=${QUEUE_FCST:-"batch"}
+    QUEUE_WGRIB2=${QUEUE_WGRIB2:-"batch"}
+    QUEUE_POST=${QUEUE_POST:-"batch"}
     ;;
 
   "ORION")
@@ -453,6 +580,8 @@ case $MACHINE in
     QUEUE_ANALYSIS=${QUEUE_ANALYSIS:-"batch"}
     PARTITION_WGRIB2=${PARTITION_WGRIB2:-"sjet,vjet,kjet,xjet"}
     QUEUE_WGRIB2=${QUEUE_WGRIB2:-"batch"}
+    PARTITION_POST=${PARTITION_POST:-"sjet,vjet,kjet,xjet"}
+    QUEUE_POST=${QUEUE_POST:-"batch"}
     ;;
 
   "ODIN")
@@ -713,6 +842,7 @@ if [ "${RUN_ENVIR}" = "nco" ]; then
   FIX_GSI=${FIX_GSI:-"${HOMErrfs}/fix/gsi"}
   FIX_UPP=${FIX_UPP:-"${HOMErrfs}/fix/upp"}
   FIX_CRTM=${FIX_CRTM:-"${HOMErrfs}/fix/crtm/CRTM_v2.3.0"}
+  FIX_UPP_CRTM=${FIX_UPP_CRTM:-"${HOMErrfs}/fix/crtm/CRTM_v2.4.0"}
   AIRCRAFT_REJECT=${AIRCRAFT_REJECT:-"${FIX_GSI}"}
   SFCOBS_USELIST=${SFCOBS_USELIST:-"${FIX_GSI}"}
 fi
@@ -1259,6 +1389,7 @@ FIXam="${EXPTDIR}/fix_am"
 FIXLAM="${EXPTDIR}/fix_lam"
 FIXgsi="${EXPTDIR}/fix_gsi"
 FIXcrtm="${EXPTDIR}/fix_crtm"
+FIXuppcrtm="${EXPTDIR}/fix_upp_crtm"
 SST_ROOT="${SST_ROOT}"
 
 if [ "${RUN_ENVIR}" = "nco" ]; then
@@ -1267,7 +1398,10 @@ if [ "${RUN_ENVIR}" = "nco" ]; then
   check_for_preexist_dir_file "${CYCLE_BASEDIR}" "${PREEXISTING_DIR_METHOD}"
   ENSCTRL_CYCLE_BASEDIR="${ENSCTRL_STMP}/tmpnwprd/$RUN"
   COMROOT="$PTMP/com"
+  ENSCTRL_COMROOT="${ENSCTRL_PTMP}/com"
   COMOUT_BASEDIR="$COMROOT/$NET/$envir"
+  ENSCTRL_COMOUT_BASEDIR="${ENSCTRL_COMROOT}/$NET/$envir"
+  ENSCTRL_COMOUT_DIR="${ENSCTRL_COMROOT}/$NET/$envir/$RUN.@Y@m@d/@H"
   NWGES_BASEDIR="$NWGES/$envir/$NET"
   ENSCTRL_NWGES_BASEDIR="${ENSCTRL_NWGES}/$envir/$NET"
   RRFSE_NWGES_BASEDIR="${RRFSE_NWGES}/$envir/$NET"
@@ -2583,6 +2717,7 @@ ENKF_FCST="${ENKF_FCST}"
 
 FIX_GSI="${FIX_GSI}"
 FIX_CRTM="${FIX_CRTM}"
+FIX_UPP_CRTM="${FIX_UPP_CRTM}"
 AIRCRAFT_REJECT="${AIRCRAFT_REJECT}"
 SFCOBS_USELIST="${SFCOBS_USELIST}"
 
@@ -2825,6 +2960,22 @@ FVCOM_FILE="${FVCOM_FILE}"
 #
 NCORES_PER_NODE="${NCORES_PER_NODE}"
 PE_MEMBER01="${PE_MEMBER01}"
+#
+#-----------------------------------------------------------------------
+#
+# IF DO_SPP is set to "TRUE", N_VAR_SPP specifies the number of physics 
+# parameterizations that are perturbed with SPP.  If DO_LSM_SPP is set to
+# "TRUE", N_VAR_LNDP specifies the number of LSM parameters that are 
+# perturbed.  LNDP_TYPE determines the way LSM perturbations are employed
+# and FHCYC_LSM_SPP_OR_NOT sets FHCYC based on whether LSM perturbations
+# are turned on or not. 
+#
+#-----------------------------------------------------------------------
+#
+N_VAR_SPP='${N_VAR_SPP}'
+N_VAR_LNDP='${N_VAR_LNDP}'
+LNDP_TYPE='${LNDP_TYPE}'
+FHCYC_LSM_SPP_OR_NOT='${FHCYC_LSM_SPP_OR_NOT}'
 EOM
 } || print_err_msg_exit "\
 Heredoc (cat) command to append new variable definitions to variable 

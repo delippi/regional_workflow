@@ -1,8 +1,11 @@
 gsi_namelist="
  &SETUP
-   miter=${miter},niter(1)=50,niter(2)=50,
+   miter=${miter},niter(1)=${niter1},niter(2)=${niter2},
    write_diag(1)=.true.,write_diag(2)=${write_diag_2},write_diag(3)=.true.,
    qoption=2,print_obs_para=.true.,diag_radardbz=${diag_radardbz},
+   if_model_dbz=${if_model_dbz}, static_gsi_nopcp_dbz=0.0,
+   rmesh_dbz=4.0,rmesh_vr=4.0,zmesh_dbz=1000.0,zmesh_vr=1000.0,
+   missing_to_nopcp=.false.,radar_no_thinning=.true.,
    gencode=78,factqmin=0.0,factqmax=0.0,
    iguess=-1,
    lread_obs_save=${lread_obs_save},lread_obs_skip=${lread_obs_skip},
@@ -44,6 +47,7 @@ gsi_namelist="
  /
 OBS_INPUT::
 !  dfile          dtype       dplat     dsis                 dval    dthin dsfcalc
+   dbzobs.nc      dbz         null      dbz                  1.0     0     0
    prepbufr       ps          null      ps                   1.0     0     0
    prepbufr       t           null      t                    1.0     0     0
    prepbufr       q           null      q                    1.0     0     0
@@ -74,12 +78,14 @@ OBS_INPUT::
    amsuabufr      amsua       n19       amsua_n19            0.0     2     0
    amsuabufr      amsua       metop-a   amsua_metop-a        0.0     2     0
    amsuabufr      amsua       metop-b   amsua_metop-b        0.0     2     0
+   amsuabufr      amsua       metop-c   amsua_metop-c        0.0     2     0
    airsbufr       amsua       aqua      amsua_aqua           0.0     2     0
    amsubbufr      amsub       n17       amsub_n17            0.0     1     0
    mhsbufr        mhs         n18       mhs_n18              0.0     2     0
    mhsbufr        mhs         n19       mhs_n19              0.0     2     0
    mhsbufr        mhs         metop-a   mhs_metop-a          0.0     2     0
    mhsbufr        mhs         metop-b   mhs_metop-b          0.0     2     0
+   mhsbufr        mhs         metop-c   mhs_metop-c          0.0     2     0
    ssmitbufr      ssmi        f13       ssmi_f13             0.0     2     0
    ssmitbufr      ssmi        f14       ssmi_f14             0.0     2     0
    ssmitbufr      ssmi        f15       ssmi_f15             0.0     2     0
@@ -114,6 +120,7 @@ OBS_INPUT::
    seviribufr     seviri      m08       seviri_m08           0.0     2     0
    seviribufr     seviri      m09       seviri_m09           0.0     2     0
    seviribufr     seviri      m10       seviri_m10           0.0     2     0
+   seviribufr     seviri      m11       seviri_m11           0.0     2     0
    iasibufr       iasi        metop-b   iasi_metop-b         0.0     2     0
    gomebufr       gome        metop-b   gome_metop-b         0.0     2     0
    atmsbufr       atms        npp       atms_npp             0.0     2     0
@@ -138,6 +145,7 @@ OBS_INPUT::
  &HYBRID_ENSEMBLE
    l_hyb_ens=${ifhyb},
    uv_hyb_ens=.true.,
+   q_hyb_ens=${q_hyb_ens},
    aniso_a_en=.false.,generate_ens=.false.,
    n_ens=${nummem},
    beta_s0=${beta1_inv},s_ens_h=${ens_h},s_ens_v=${ens_v},
@@ -150,6 +158,7 @@ OBS_INPUT::
    jcap_ens=574,
    fv3sar_bg_opt=${fv3lam_bg_type},
    readin_localization=${readin_localization},
+   ens_fast_read=${ens_fast_read},
  /
  &RAPIDREFRESH_CLDSURF
    dfi_radar_latent_heat_time_period=20.0,

@@ -114,9 +114,24 @@ RUN_ENVIR="nco"
 # "slurm".
 #
 # QUEUE_WGRIB2:
-# The queue or QOS to which the task that remaps output grids is submitted.  
+# The queue or QOS to which the task that wgrib2 is submitted.  
 # If this is not set or set to an empty string, it will be (re)set to a 
 # machine-dependent value.
+#
+# PARTITION_POST:
+# If using the slurm job scheduler (i.e. if SCHED is set to "slurm"), 
+# the partition to which the task that upp is submitted.
+#
+# QUEUE_POST:
+# The queue or QOS to which the task that upp is submitted.  
+# If this is not set or set to an empty string, it will be (re)set to a 
+# machine-dependent value.
+#
+# RESERVATION:
+# The reservation for major tasks.  
+#
+# RESERVATION_POST:
+# The reservation for post tasks.  
 #
 # mach_doc_end
 #
@@ -126,6 +141,7 @@ MACHINE="BIG_COMPUTER"
 ACCOUNT="project_name"
 SERVICE_ACCOUNT=""
 RESERVATION=""
+RESERVATION_POST=""
 SCHED=""
 PARTITION_DEFAULT=""
 QUEUE_DEFAULT=""
@@ -139,6 +155,8 @@ PARTITION_ANALYSIS=""
 QUEUE_ANALYSIS=""
 PARTITION_WGRIB2=""
 QUEUE_WGRIB2=""
+PARTITION_POST=""
+QUEUE_POST=""
 #
 #-----------------------------------------------------------------------
 #
@@ -292,6 +310,7 @@ envir="para"
 RUN="experiment_name"
 TAG="dev_grid"
 PTMP="/base/path/of/directory/containing/postprocessed/output/files"
+ENSCTRL_PTMP="/base/path/of/directory/containing/postprocessed/output/files"
 NWGES="/base/path/of/directory/containing/model/output/files"
 ENSCTRL_NWGES="/base/path/of/directory/containing/model/restart/files"
 RRFSE_NWGES="/base/path/of/directory/containing/model/output/files"
@@ -460,6 +479,9 @@ WFLOW_LAUNCH_LOG_FN="log.launch_FV3LAM_wflow"
 # An array containing the hours of the day at which the product cycle starts,
 # from cold start input or from spin-up cycle forcast
 #
+# CYCL_HRS_RECENTER:
+# An array containing the hours of the day at which the ensemble recenter is on
+#
 # BOUNDARY_LEN_HRS
 # The length of boundary condition for normal forecast, in integer hours.
 #
@@ -489,6 +511,9 @@ WFLOW_LAUNCH_LOG_FN="log.launch_FV3LAM_wflow"
 # POSTPROC_LONG_LEN_HRS:
 # The length of long post process, in integer hours.
 #
+# CYCL_HRS_HYB_FV3LAM_ENS:
+# An array containing the hours of the day at which the GSI hybrid using FV3LAM ensemeble.
+#
 #-----------------------------------------------------------------------
 #
 DATE_FIRST_CYCL="YYYYMMDD"
@@ -496,6 +521,7 @@ DATE_LAST_CYCL="YYYYMMDD"
 CYCL_HRS=( "HH1" "HH2" )
 CYCL_HRS_SPINSTART=( "HH1" "HH2" )
 CYCL_HRS_PRODSTART=( "HH1" "HH2" )
+CYCL_HRS_RECENTER=( "HH1" "HH2" )
 BOUNDARY_LEN_HRS="0"
 BOUNDARY_LONG_LEN_HRS="0"
 POSTPROC_LEN_HRS="1"
@@ -505,6 +531,7 @@ FCST_LEN_HRS_SPINUP="1"
 FCST_LEN_HRS_CYCLES=( )
 DA_CYCLE_INTERV="3"
 RESTART_INTERVAL="3,6"
+CYCL_HRS_HYB_FV3LAM_ENS=( "99" )
 
 #-----------------------------------------------------------------------
 #
@@ -546,6 +573,10 @@ RESTART_INTERVAL="3,6"
 # cycle definition for product cycle group
 # This group runs: anal_gsi_input and data process, run_fcst, python_skewt, run_clean
 #
+# RECENTER_CYCLEDEF:
+# cycle definition for recenter cycle group
+# This group runs: recenter
+#
 # POSTPROC_CYCLEDEF:
 # cycle definition for "postproc" group
 # This group runs: run_post, run_ncl, run_ncl_zip
@@ -568,6 +599,7 @@ BOUNDARY_CYCLEDEF="00 01 01 01 2100 *"
 BOUNDARY_LONG_CYCLEDEF="00 01 01 01 2100 *"
 SPINUP_CYCLEDEF="00 01 01 01 2100 *"
 PROD_CYCLEDEF="00 01 01 01 2100 *"
+RECENTER_CYCLEDEF="00 01 01 01 2100 *"
 POSTPROC_CYCLEDEF="00 01 01 01 2100 *"
 POSTPROC_LONG_CYCLEDEF="00 01 01 01 2100 *"
 ARCHIVE_CYCLEDEF="00 01 01 01 2100 *"
@@ -582,8 +614,10 @@ ARCHIVE_CYCLEDEF="00 01 01 01 2100 *"
 #       (need to follow FORTRAN namelist convetion)
 #-------------------------------------------------------------------------------------
 # &SETUP  and &BKGERR
+niter1=50
+niter2=50
 l_obsprvdiag=.false.
-diag_radardbz=.true.
+diag_radardbz=.false.
 write_diag_2=.false.
 bkgerr_vs=1.0
 bkgerr_hzscl=0.7,1.4,2.80   #no trailing ,
@@ -600,25 +634,38 @@ regional_ensemble_option=1     #1 for GDAS ; 5 for FV3LAM ensemble
 grid_ratio_fv3=2.0             #fv3 resolution 3km, so analysis=3*2=6km
 grid_ratio_ens=3               #if analysis is 3km, then ensemble=3*3=9km. GDAS ensemble is 20km
 i_en_perts_io=1                #0 or 1: original file   3: pre-processed ensembles
+q_hyb_ens=.false.
+ens_fast_read=.false.
 
 # &RAPIDREFRESH_CLDSURF
 l_PBL_pseudo_SurfobsT=.false.
 l_PBL_pseudo_SurfobsQ=.false.
 i_use_2mQ4B=0
 i_use_2mT4B=0
+i_T_Q_adjust=1
+l_rtma3d=.false.
+i_precip_vertical_check=0
 #-----------------------------------------------------------------------
 # HYBENSMEM_NMIN:
 #    Minimum number of ensemble members required a hybrid GSI analysis 
 #
 HYBENSMEM_NMIN=80
-ANAVINFO_FN="anavinfo.fv3lam_hrrr"
-ENKF_ANAVINFO_FN="anavinfo.enkf_fv3lam_hrrr"
+ANAVINFO_FN="anavinfo.rrfs"
+ANAVINFO_DBZ_FN="anavinfo.rrfs_dbz"
+ENKF_ANAVINFO_FN="anavinfo.rrfs"
+ENKF_ANAVINFO_DBZ_FN="anavinfo.enkf.rrfs_dbz"
 CONVINFO_FN="convinfo.rrfs"
 BERROR_FN="rap_berror_stats_global_RAP_tune" #under $FIX_GSI
 OBERROR_FN="errtable.rrfs"
 HYBENSINFO_FN="hybens_info.rrfs"
 AIRCRAFT_REJECT=""
 SFCOBS_USELIST=""
+#
+#-----------------------------------------------------------------------
+# default namelist for nonvar cloud analysis
+cld_bld_hgt=1200.0
+l_precip_clear_only=.false.
+l_qnr_from_qr=.false.
 #
 #-----------------------------------------------------------------------
 #
@@ -1098,6 +1145,14 @@ ESGgrid_WIDE_HALO_WIDTH=""
 #    the parameters defined in this section are set to non-empty strings
 #    before creating the experiment directory.
 #
+# USE_IO_NETCDF
+#   use parallel netcdf io for restart files
+#
+# NSOUT
+#   setup frequency of writing out forecast files in time steps
+# NSOUT_MIN
+#   setup frequency of writing out forecast files in minutes
+#
 #-----------------------------------------------------------------------
 #
 DT_ATMOS=""
@@ -1107,6 +1162,9 @@ IO_LAYOUT_X="1"
 IO_LAYOUT_Y="1"
 BLOCKSIZE=""
 FH_DFI_RADAR="-20000000000"
+USE_IO_NETCDF="FALSE"
+NSOUT="0"
+NSOUT_MIN="0"
 #
 #-----------------------------------------------------------------------
 #
@@ -1409,6 +1467,7 @@ SFC_CLIMO_INPUT_DIR=""
 FIX_GSI=""
 FIX_UPP=""
 FIX_CRTM=""
+FIX_UPP_CRTM=""
 
 FNGLAC="global_glacier.2x2.grb"
 FNMXIC="global_maxice.2x2.grb"
@@ -1536,6 +1595,7 @@ PROCESS_BUFR_TN="process_bufr"
 RADAR_REFL2TTEN_TN="radar_refl2tten"
 CLDANL_NONVAR_TN="cldanl_nonvar"
 SAVE_RESTART_TN="save_restart"
+JEDI_ENVAR_IODA_TN="jedi_envar_ioda"
 #
 # Number of nodes.
 #
@@ -1559,8 +1619,10 @@ NNODES_PROC_BUFR="1"
 NNODES_RUN_REF2TTEN="1"
 NNODES_RUN_NONVARCLDANL="1"
 NNODES_RUN_GRAPHICS="1"
+NNODES_RUN_ENSPOST="1"
 NNODES_RUN_BUFRSND="1"
 NNODES_SAVE_RESTART="1"
+NNODES_RUN_JEDIENVAR_IODA="1"
 #
 # Number of cores.
 #
@@ -1593,8 +1655,10 @@ PPN_PROC_BUFR="1"
 PPN_RUN_REF2TTEN="1"
 PPN_RUN_NONVARCLDANL="1"
 PPN_RUN_GRAPHICS="12"
+PPN_RUN_ENSPOST="1"
 PPN_RUN_BUFRSND="28"
 PPN_SAVE_RESTART="1"
+PPN_RUN_JEDIENVAR_IODA="1"
 #
 # Walltimes.
 #
@@ -1620,6 +1684,19 @@ WTIME_RUN_REF2TTEN="00:20:00"
 WTIME_RUN_NONVARCLDANL="00:20:00"
 WTIME_RUN_BUFRSND="00:45:00"
 WTIME_SAVE_RESTART="00:15:00"
+WTIME_RUN_ENSPOST="00:30:00"
+WTIME_RUN_JEDIENVAR_IODA="00:30:00"
+#
+# Start times.
+#
+START_TIME_SPINUP="01:10:00"
+START_TIME_PROD="02:20:00"
+START_TIME_CONVENTIONAL_SPINUP="00:40:00"
+START_TIME_LATE_ANALYSIS="01:40:00"
+START_TIME_CONVENTIONAL="00:40:00"
+START_TIME_NSSLMOSIAC="00:45:00"
+START_TIME_LIGHTNINGNC="00:45:00"
+
 #
 # Memory.
 #
@@ -1628,6 +1705,7 @@ MEMO_RUN_REF2TTEN="20G"
 MEMO_RUN_NONVARCLDANL="20G"
 MEMO_RUN_PREPSTART="24G"
 MEMO_RUN_WGRIB2="24G"
+MEMO_RUN_JEDIENVAR_IODA="20G"
 #
 # Maximum number of attempts.
 #
@@ -1652,6 +1730,7 @@ MAXTRIES_PROCESS_BUFR="1"
 MAXTRIES_RADAR_REF2TTEN="1"
 MAXTRIES_CLDANL_NONVAR="1"
 MAXTRIES_SAVE_RESTART="1"
+MAXTRIES_JEDI_ENVAR_IODA="1"
 #
 #
 #-----------------------------------------------------------------------
@@ -1715,6 +1794,7 @@ CUSTOM_POST_PARAMS_FP=""
 POST_FULL_MODEL_NAME="FV3R"
 POST_SUB_MODEL_NAME="NONE"
 TESTBED_FIELDS_FN=""
+TESTBED_FIELDS_FN2=""
 #
 #-----------------------------------------------------------------------
 #
@@ -1776,12 +1856,21 @@ TILE_SETS="full"
 # DO_ENKFUPDATE:
 # Decide whether or not to run EnKF update for the ensemble members
 #
+# DO_ENKF_RADAR_REF:
+# Decide whether or not to run Radar Reflectivity EnKF update for the ensemble members
+#
+# DO_ENVAR_RADAR_REF:
+# Decide whether or not to run Radar Reflectivity hybrid analysis
+#
 # DO_RECENTER:
 # Decide whether or not to run recenter for the ensemble members
 #
 # DO_ENS_GRAPHICS:
 # Flag to turn on/off ensemble graphics. Turns OFF deterministic
 # graphics.
+#
+# DO_ENSPOST:
+# Flag to turn on/off python ensemble postprocessing for WPC testbeds.
 #-----------------------------------------------------------------------
 #
 DO_ENSEMBLE="FALSE"
@@ -1789,8 +1878,11 @@ NUM_ENS_MEMBERS="1"
 DO_ENSCONTROL="FALSE"
 DO_GSIOBSERVER="FALSE"
 DO_ENKFUPDATE="FALSE"
+DO_ENKF_RADAR_REF="FALSE"
+DO_ENVAR_RADAR_REF="FALSE"
 DO_RECENTER="FALSE"
 DO_ENS_GRAPHICS="FALSE"
+DO_ENSPOST="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -1821,6 +1913,9 @@ DO_ENS_GRAPHICS="FALSE"
 #
 # DO_BUFRSND:
 # Decide whether or not to run EMC BUFR sounding
+#
+# USE_RRFSE_ENS:
+# Use rrfse ensemble for hybrid analysis
 #-----------------------------------------------------------------------
 DO_DACYCLE="FALSE"
 DO_SURFACE_CYCLE="FALSE"
@@ -1829,6 +1924,7 @@ DO_SOIL_ADJUST="FALSE"
 DO_UPDATE_BC="FALSE"
 DO_RADDA="FALSE"
 DO_BUFRSND="FALSE"
+USE_RRFSE_ENS="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -1856,23 +1952,89 @@ LBCS_ICS_ONLY="FALSE"
 #
 #-----------------------------------------------------------------------
 #
-DO_SHUM="false"
-DO_SPPT="false"
-DO_SKEB="false"
+DO_SHUM="FALSE"
+DO_SPPT="FALSE"
+DO_SKEB="FALSE"
+ISEED_SPPT="1"
+ISEED_SHUM="2"
+ISEED_SKEB="3"
+NEW_LSCALE="TRUE"
 SHUM_MAG="0.006" #Variable "shum" in input.nml
 SHUM_LSCALE="150000"
 SHUM_TSCALE="21600" #Variable "shum_tau" in input.nml
 SHUM_INT="3600" #Variable "shumint" in input.nml
-SPPT_MAG="1.0" #Variable "sppt" in input.nml
+SPPT_MAG="0.7" #Variable "sppt" in input.nml
+SPPT_LOGIT="TRUE"
 SPPT_LSCALE="150000"
 SPPT_TSCALE="21600" #Variable "sppt_tau" in input.nml
 SPPT_INT="3600" #Variable "spptint" in input.nml
+SPPT_SFCLIMIT="TRUE"
 SKEB_MAG="0.5" #Variable "skeb" in input.nml
 SKEB_LSCALE="150000"
 SKEB_TSCALE="21600" #Variable "skeb_tau" in input.nml
 SKEB_INT="3600" #Variable "skebint" in input.nml
+SKEBNORM="1"
 SKEB_VDOF="10"
-USE_ZMTNBLCK="false"
+USE_ZMTNBLCK="FALSE"
+#
+#-----------------------------------------------------------------------
+#
+# Set default SPP stochastic physics options. Each SPP option is an array,  
+# applicable (in order) to the scheme/parameter listed in SPP_VAR_LIST. 
+# Enter each value of the array in config.sh as shown below without commas
+# or single quotes (e.g., SPP_VAR_LIST=( "pbl" "sfc" "mp" "rad" "gwd" ). 
+# Both commas and single quotes will be added by Jinja when creating the
+# namelist.
+#
+# Note that SPP is currently only available for specific physics schemes 
+# used in the RAP/HRRR physics suite.  Users need to be aware of which SDF
+# is chosen when turning this option on. 
+#
+# Patterns evolve and are applied at each time step.
+#
+#-----------------------------------------------------------------------
+#
+DO_SPP="FALSE"
+SPP_VAR_LIST=( "pbl" "sfc" "mp" "rad" "gwd" ) 
+SPP_MAG_LIST=( "0.2" "0.2" "0.75" "0.2" "0.2" ) #Variable "spp_prt_list" in input.nml
+SPP_LSCALE=( "150000.0" "150000.0" "150000.0" "150000.0" "150000.0" )
+SPP_TSCALE=( "21600.0" "21600.0" "21600.0" "21600.0" "21600.0" ) #Variable "spp_tau" in input.nml
+SPP_SIGTOP1=( "0.1" "0.1" "0.1" "0.1" "0.1")
+SPP_SIGTOP2=( "0.025" "0.025" "0.025" "0.025" "0.025" )
+SPP_STDDEV_CUTOFF=( "1.5" "1.5" "2.5" "1.5" "1.5" ) 
+ISEED_SPP=( "4" "5" "6" "7" "8" )
+#
+#-----------------------------------------------------------------------
+#
+# Turn on SPP in Noah or RUC LSM (support for Noah MP is in progress).
+# Please be aware of the SDF that you choose if you wish to turn on LSM
+# SPP.
+#
+# SPP in LSM schemes is handled in the &nam_sfcperts namelist block 
+# instead of in &nam_sppperts, where all other SPP is implemented.
+#
+# The default perturbation frequency is determined by the fhcyc namelist 
+# entry.  Since that parameter is set to zero in the SRW App, use 
+# LSM_SPP_EACH_STEP to perturb every time step. 
+#
+# Perturbations to soil moisture content (SMC) are only applied at the  
+# first time step.
+#
+# LSM perturbations include SMC - soil moisture content (volume fraction),
+# VGF - vegetation fraction, ALB - albedo, SAL - salinity, 
+# EMI - emissivity, ZOL - surface roughness (cm), and STC - soil temperature.
+#
+# Only five perturbations at a time can be applied currently, but all seven
+# are shown below.  In addition, only one unique iseed value is allowed 
+# at the moment, and is used for each pattern.
+#
+DO_LSM_SPP="FALSE" #If true, sets lndp_type=2
+LSM_SPP_TSCALE=( "21600" "21600" "21600" "21600" "21600" "21600" "21600" )
+LSM_SPP_LSCALE=( "150000" "150000" "150000" "150000" "150000" "150000" "150000" )
+ISEED_LSM_SPP=( "9" )
+LSM_SPP_VAR_LIST=( "smc" "vgf" "alb" "sal" "emi" "zol" "stc" )
+LSM_SPP_MAG_LIST=( "0.2" "0.001" "0.001" "0.001" "0.001" "0.001" "0.2" )
+LSM_SPP_EACH_STEP="TRUE" #Sets lndp_each_step=.true.
 #
 #-----------------------------------------------------------------------
 # 
@@ -1946,6 +2108,17 @@ COMPILER="intel"
 #-----------------------------------------------------------------------
 #
 GWD_HRRRsuite_BASEDIR=""
+#
+#-----------------------------------------------------------------------
+#
+# Parameters for JEDI options
+# DO_JEDI_ENVAR_IODA:
+#      Flag turn on the JEDI-IODA converters for EnVAR.  It requires GSI 
+#      to produce NetCDF diag files
+#-----------------------------------------------------------------------
+#
+DO_JEDI_ENVAR_IODA="FALSE"
+#
 #-----------------------------------------------------------------------
 #
 # Parameters for analysis options
@@ -1975,6 +2148,7 @@ DO_NLDN_LGHT="FALSE"
 #
 RADARREFL_MINS=(0 1 2 3)
 RADARREFL_TIMELEVEL=(0)
+
 
 #
 #-----------------------------------------------------------------------

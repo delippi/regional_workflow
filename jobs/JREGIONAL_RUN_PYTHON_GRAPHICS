@@ -64,7 +64,8 @@ on the output files corresponding to a specified forecast hour.
 
 if [ "${RUN_ENVIR}" = "nco" ]; then
   COMOUT="${COMOUT_BASEDIR}/$RUN.$PDY/$cyc${SLASH_ENSMEM_SUBDIR}"
-  postprd_dir="${COMOUT}"
+  COMOUT_mem0="${ENSCTRL_COMOUT_BASEDIR}/$RUN.$PDY/$cyc"
+  postprd_dir="${COMOUT}/${ENSPROD:-}"
   run_dir="${COMOUT}/pyprd"
   zip_dir="${COMOUT}/nclprd"
 else
@@ -73,8 +74,13 @@ else
   zip_dir="${CYCLE_DIR}${SLASH_ENSMEM_SUBDIR}/nclprd"
 fi
 
-fcst_length=${FCST_LEN_HRS_CYCLES[$cyc]}
+if [ "${IS_RTMA}" = "TRUE" ]; then
+  fcst_length=${FCST_LEN_HRS_CYCLES[$cyc]/%.*/}
+else
+  fcst_length=${FCST_LEN_HRS_CYCLES[$cyc]}
+fi
 
+IMAGES_FN=${IMAGES_FN:-$PYTHON_GRAPHICS_YML_FN}
 # Choose an appropriate sites file for the grid
 sites_file=conus_raobs.txt
 tiles=${TILES:-full}
@@ -126,17 +132,21 @@ if [ -d ${postprd_dir}/${subdir} ] ; then
   zip_dir=${zip_dir}/${subdir:-}
 fi
 
+if [ ${ENSPROD:-} = 'ensprod' ] ; then
+  file_id="ens"
+  start_hour=1
+fi
 
 # Choose the appropriate file template for graphics type
 case ${GRAPHICS_TYPE} in
 
   "maps")
 
-    file_tmpl="${NET}.t${CDATE:8:2}z.bgdawpf{FCST_TIME:03d}.tm00.grib2"
+    file_tmpl="${NET}.t${CDATE:8:2}z.bg${file_id:-dawp}f{FCST_TIME:03d}.tm00.grib2"
     file_type=prs
     extra_args="\
       --tiles $tiles \
-      --images ${PYTHON_GRAPHICS_DIR}/image_lists/${PYTHON_GRAPHICS_YML_FN} hourly"
+      --images ${PYTHON_GRAPHICS_DIR}/image_lists/${IMAGES_FN} hourly"
     if [ ${ALL_LEADS:-true} = "true" ] ; then
         extra_args="\
           ${extra_args} \
@@ -163,7 +173,7 @@ case ${GRAPHICS_TYPE} in
 
     # Link in control member to the location it should be
     ens_mem0=${postprd_dir/'#mem#'/'0000'/}
-    mem0_fp=${ENSCTRL_STMP}/${CDATE}/postprd
+    mem0_fp=${COMOUT_mem0}
     mem0_fn=${file_tmpl/'{FCST_TIME:03d}'/'*'}
 
     mkdir_vrfy -p ${ens_mem0}
@@ -203,7 +213,7 @@ python -u ${PYTHON_GRAPHICS_DIR}/create_graphics.py \
   ${GRAPHICS_TYPE} \
   -a ${age:-3} \
   -d ${postprd_dir} \
-  -f 0 ${fcst_length} \
+  -f ${start_hour:-0} ${fcst_length} \
   --file_tmpl ${file_tmpl} \
   --file_type ${file_type} \
   -m "${MODEL}" \

@@ -174,6 +174,7 @@ settings="\
   'account': $ACCOUNT
   'service_account': ${SERVICE_ACCOUNT:-$ACCOUNT}
   'reservation': $RESERVATION
+  'reservation_post': $RESERVATION_POST
   'sched': $SCHED
   'partition_default': ${PARTITION_DEFAULT}
   'queue_default': ${QUEUE_DEFAULT}
@@ -188,6 +189,8 @@ settings="\
   'queue_analysis': ${QUEUE_ANALYSIS}
   'partition_wgrib2': ${PARTITION_WGRIB2}
   'queue_wgrib2': ${QUEUE_WGRIB2}
+  'partition_post': ${PARTITION_POST}
+  'queue_post': ${QUEUE_POST}
 #
 # Workflow task names.
 #
@@ -218,6 +221,7 @@ settings="\
   'run_bufrsnd_tn': ${RUN_BUFRSND_TN}
   'save_restart': ${SAVE_RESTART_TN}
   'tag': ${TAG}
+  'jedi_envar_ioda': ${JEDI_ENVAR_IODA_TN}
 #
 # Number of nodes to use for each task.
 #
@@ -241,8 +245,10 @@ settings="\
   'nnodes_run_ref2tten': ${NNODES_RUN_REF2TTEN}
   'nnodes_run_nonvarcldanl': ${NNODES_RUN_NONVARCLDANL}
   'nnodes_run_graphics': ${NNODES_RUN_GRAPHICS}
+  'nnodes_run_enspost': ${NNODES_RUN_ENSPOST}
   'nnodes_run_bufrsnd': ${NNODES_RUN_BUFRSND}
   'nnodes_save_restart': ${NNODES_SAVE_RESTART}
+  'nnodes_run_jedienvar_ioda': ${NNODES_RUN_JEDIENVAR_IODA}
 #
 # Number of cores used for a task
 #
@@ -277,8 +283,10 @@ settings="\
   'ppn_run_ref2tten': ${PPN_RUN_REF2TTEN}
   'ppn_run_nonvarcldanl': ${PPN_RUN_NONVARCLDANL}
   'ppn_run_graphics': ${PPN_RUN_GRAPHICS}
+  'ppn_run_enspost': ${PPN_RUN_ENSPOST}
   'ppn_run_bufrsnd': ${PPN_RUN_BUFRSND}
   'ppn_save_restart': ${PPN_SAVE_RESTART}
+  'ppn_run_jedienvar_ioda': ${PPN_RUN_JEDIENVAR_IODA}
 #
 # Maximum wallclock time for each task.
 #
@@ -296,6 +304,7 @@ settings="\
   'wtime_run_enkf': ${WTIME_RUN_ENKF}
   'wtime_run_recenter': ${WTIME_RUN_RECENTER}
   'wtime_run_post': ${WTIME_RUN_POST}
+  'wtime_run_enspost': ${WTIME_RUN_ENSPOST}
   'wtime_run_wgrib2': ${WTIME_RUN_WGRIB2}
   'wtime_proc_radar': ${WTIME_PROC_RADAR}
   'wtime_proc_lightning': ${WTIME_PROC_LIGHTNING}
@@ -304,6 +313,17 @@ settings="\
   'wtime_run_nonvarcldanl': ${WTIME_RUN_NONVARCLDANL}
   'wtime_run_bufrsnd': ${WTIME_RUN_BUFRSND}
   'wtime_save_restart': ${WTIME_SAVE_RESTART}
+  'wtime_run_jedienvar_ioda': ${WTIME_RUN_JEDIENVAR_IODA}
+#
+# start time for each task.
+#
+  'start_time_spinup': ${START_TIME_SPINUP}
+  'start_time_prod': ${START_TIME_PROD}
+  'start_time_conventional_spinup': ${START_TIME_CONVENTIONAL_SPINUP}
+  'start_time_late_analysis': ${START_TIME_LATE_ANALYSIS}
+  'start_time_conventional': ${START_TIME_CONVENTIONAL}
+  'start_time_nsslmosiac': ${START_TIME_NSSLMOSIAC}
+  'start_time_lightningnc': ${START_TIME_LIGHTNINGNC}
 #
 # Maximum memory for each task.
 #
@@ -312,6 +332,7 @@ settings="\
   'memo_run_nonvarcldanl': ${MEMO_RUN_NONVARCLDANL}
   'memo_run_prepstart': ${MEMO_RUN_PREPSTART}
   'memo_run_wgrib2': ${MEMO_RUN_WGRIB2}
+  'memo_run_jedienvar_ioda': ${MEMO_RUN_JEDIENVAR_IODA}
 #
 # Maximum number of tries for each task.
 #
@@ -335,6 +356,7 @@ settings="\
   'maxtries_radar_ref2tten': ${MAXTRIES_RADAR_REF2TTEN}
   'maxtries_cldanl_nonvar': ${MAXTRIES_CLDANL_NONVAR}
   'maxtries_save_restart': ${MAXTRIES_SAVE_RESTART}
+  'maxtries_jedi_envar_ioda': ${MAXTRIES_JEDI_ENVAR_IODA}
 #
 # Flags that specify whether to run the preprocessing tasks.
 #
@@ -357,6 +379,8 @@ settings="\
   'ensctrl_cycle_basedir': ${ENSCTRL_CYCLE_BASEDIR:-}
   'nwges_basedir': ${NWGES_BASEDIR}
   'ensctrl_nwges_basedir': ${ENSCTRL_NWGES_BASEDIR}
+  'ensctrl_comout_basedir': ${ENSCTRL_COMOUT_BASEDIR}
+  'ensctrl_comout_dir': ${ENSCTRL_COMOUT_DIR}
   'rrfse_nwges_basedir': ${RRFSE_NWGES_BASEDIR}
   'obspath': ${OBSPATH}
   'global_var_defns_fp': ${GLOBAL_VAR_DEFNS_FP}
@@ -386,6 +410,8 @@ settings="\
   'cycl_hrs': [ $( printf "\'%s\', " "${CYCL_HRS[@]}" ) ]
   'cycl_hrs_spinstart': [ $( printf "\'%s\', " "${CYCL_HRS_SPINSTART[@]}" ) ]
   'cycl_hrs_prodstart': [ $( printf "\'%s\', " "${CYCL_HRS_PRODSTART[@]}" ) ]
+  'cycl_hrs_recenter': [ $( printf "\'%s\', " "${CYCL_HRS_RECENTER[@]}" ) ]
+  'cycl_hrs_hyb_fv3lam_ens': [ $( printf "\'%s\', " "${CYCL_HRS_HYB_FV3LAM_ENS[@]}" ) ]
   'restart_hrs_prod': ${RESTART_INTERVAL}
   'cycl_freq': !!str 12:00:00
   'at_start_cycledef': ${AT_START_CYCLEDEF}
@@ -394,6 +420,7 @@ settings="\
   'boundary_long_cycledef': ${BOUNDARY_LONG_CYCLEDEF}
   'spinup_cycledef': ${SPINUP_CYCLEDEF}
   'prod_cycledef': ${PROD_CYCLEDEF}
+  'recenter_cycledef': ${RECENTER_CYCLEDEF}
   'postproc_long_cycledef': ${POSTPROC_LONG_CYCLEDEF}
   'archive_cycledef': ${ARCHIVE_CYCLEDEF}
 #
@@ -405,6 +432,7 @@ settings="\
   'boundary_long_len_hrs': ${BOUNDARY_LONG_LEN_HRS}
   'postproc_len_hrs': ${POSTPROC_LEN_HRS}
   'postproc_long_len_hrs': ${POSTPROC_LONG_LEN_HRS}
+  'postproc_nsout_min': ${NSOUT_MIN}
 #
 # Ensemble-related parameters.
 #
@@ -417,9 +445,12 @@ settings="\
   'do_enscontrol': ${DO_ENSCONTROL}
   'do_gsiobserver': ${DO_GSIOBSERVER}
   'do_enkfupdate': ${DO_ENKFUPDATE}
+  'do_enkf_radar_ref': ${DO_ENKF_RADAR_REF}
+  'do_envar_radar_ref': ${DO_ENVAR_RADAR_REF}
   'do_recenter': ${DO_RECENTER}
   'do_bufrsnd': ${DO_BUFRSND}
   'do_ens_graphics': ${DO_ENS_GRAPHICS}
+  'do_enspost': ${DO_ENSPOST}
 #
 # data assimilation related parameters.
 #
@@ -433,6 +464,11 @@ settings="\
   'regional_ensemble_option': ${regional_ensemble_option}
   'radar_ref_thinning': ${RADAR_REF_THINNING}
   'ensctrl_stmp': ${ENSCTRL_STMP}
+  'use_rrfse_ens': ${USE_RRFSE_ENS}
+#
+# JEDI related parameters (liaofan)
+#
+  'do_jedi_envar_ioda': ${DO_JEDI_ENVAR_IODA}
 #
 # graphics related parameters
 #
@@ -594,6 +630,20 @@ if [ "${RUN_ENVIR}" = "nco" ]; then
     the experiment generation script."
     fi
 
+# Resolve the target directory that the FIXuppcrtm symlink points to
+    ln_vrfy -fsn "$FIX_UPP_CRTM" "$FIXuppcrtm"
+
+    path_resolved=$( readlink -m "$FIXuppcrtm" )
+    if [ ! -d "${path_resolved}" ]; then
+      print_err_msg_exit "\
+    Missing link to FIXuppcrtm
+    RUN_ENVIR = \"${RUN_ENVIR}\"
+    FIXuppcrtm = \"$FIXuppcrtm\"
+    path_resolved = \"${path_resolved}\"
+    Please ensure that path_resolved is an existing directory and then rerun
+    the experiment generation script."
+    fi
+
   fi  # check if DA
 
   ln_vrfy -fsn "$FIXgsm" "$FIXam"
@@ -750,6 +800,9 @@ settings="\
     'blocksize': $BLOCKSIZE,
     'ccpp_suite': ${CCPP_PHYS_SUITE},
   }
+'fv3gfs_io': {
+    'use_io_netcdf': ${USE_IO_NETCDF:-FALSE},
+  }
 'fv_core_nml': {
     'target_lon': ${LON_CTR},
     'target_lat': ${LAT_CTR},
@@ -777,23 +830,13 @@ settings="\
     'do_shum': ${DO_SHUM},
     'do_sppt': ${DO_SPPT},
     'do_skeb': ${DO_SKEB},
+    'do_spp': ${DO_SPP},
+    'n_var_spp': ${N_VAR_SPP},
+    'n_var_lndp': ${N_VAR_LNDP},
+    'lndp_type': ${LNDP_TYPE},
+    'lndp_each_step': ${LSM_SPP_EACH_STEP},
+    'fhcyc': ${FHCYC_LSM_SPP_OR_NOT},
     'print_diff_pgr': ${PRINT_DIFF_PGR},
-  }
-'nam_stochy': {
-    'shum': ${SHUM_MAG},
-    'shum_lscale': ${SHUM_LSCALE},
-    'shum_tau': ${SHUM_TSCALE},
-    'shumint': ${SHUM_INT},
-    'sppt': ${SPPT_MAG},
-    'sppt_lscale': ${SPPT_LSCALE},
-    'sppt_tau': ${SPPT_TSCALE},
-    'spptint': ${SPPT_INT},
-    'skeb': ${SKEB_MAG},
-    'skeb_lscale': ${SKEB_LSCALE},
-    'skeb_tau': ${SKEB_TSCALE},
-    'skebint': ${SKEB_INT},
-    'skeb_vdof': ${SKEB_VDOF},
-    'use_zmtnblck': ${USE_ZMTNBLCK},
   }"
 #
 # Add to "settings" the values of those namelist variables that specify
@@ -849,7 +892,91 @@ done
 #
 settings="$settings
   }"
+#
+# Add the relevant tendency-based stochastic physics namelist variables to
+# "settings" when running with SPPT, SHUM, or SKEB turned on. If running 
+# with SPP or LSM SPP, set the "new_lscale" variable.  Otherwise only 
+# include an empty "nam_stochy" stanza. 
+#
+settings="$settings
+'nam_stochy': {"
+if [ "${DO_SPPT}" = "TRUE" ]; then 
+    settings="$settings
+    'iseed_sppt': ${ISEED_SPPT},
+    'new_lscale': ${NEW_LSCALE},
+    'sppt': ${SPPT_MAG},
+    'sppt_logit': ${SPPT_LOGIT},
+    'sppt_lscale': ${SPPT_LSCALE},
+    'sppt_sfclimit': ${SPPT_SFCLIMIT},
+    'sppt_tau': ${SPPT_TSCALE},
+    'spptint': ${SPPT_INT},
+    'use_zmtnblck': ${USE_ZMTNBLCK},"
+fi
 
+if [ "${DO_SHUM}" = "TRUE" ]; then 
+    settings="$settings
+    'iseed_shum': ${ISEED_SHUM},
+    'new_lscale': ${NEW_LSCALE},
+    'shum': ${SHUM_MAG},
+    'shum_lscale': ${SHUM_LSCALE},
+    'shum_tau': ${SHUM_TSCALE},
+    'shumint': ${SHUM_INT},"
+fi
+
+if [ "${DO_SKEB}" = "TRUE" ]; then
+    settings="$settings
+    'iseed_skeb': ${ISEED_SKEB},
+    'new_lscale': ${NEW_LSCALE},
+    'skeb': ${SKEB_MAG},
+    'skeb_lscale': ${SKEB_LSCALE},
+    'skebnorm': ${SKEBNORM},
+    'skeb_tau': ${SKEB_TSCALE},
+    'skebint': ${SKEB_INT},
+    'skeb_vdof': ${SKEB_VDOF},"
+fi
+
+if [ "${DO_SPP}" = "TRUE" ] || [ "${DO_LSM_SPP}" = "TRUE" ]; then
+    settings="$settings
+    'new_lscale': ${NEW_LSCALE},"
+fi
+settings="$settings
+  }"
+#
+# Add the relevant SPP namelist variables to "settings" when running with
+# SPP turned on.  Otherwise only include an empty "nam_sppperts" stanza.
+#
+settings="$settings
+'nam_sppperts': {"
+if [ "${DO_SPP}" = "TRUE" ]; then
+    settings="$settings
+    'iseed_spp': [ $( printf "%s, " "${ISEED_SPP[@]}" ) ],
+    'spp_lscale': [ $( printf "%s, " "${SPP_LSCALE[@]}" ) ],
+    'spp_prt_list': [ $( printf "%s, " "${SPP_MAG_LIST[@]}" ) ],
+    'spp_sigtop1': [ $( printf "%s, " "${SPP_SIGTOP1[@]}" ) ],
+    'spp_sigtop2': [ $( printf "%s, " "${SPP_SIGTOP2[@]}" ) ],
+    'spp_stddev_cutoff': [ $( printf "%s, " "${SPP_STDDEV_CUTOFF[@]}" ) ],
+    'spp_tau': [ $( printf "%s, " "${SPP_TSCALE[@]}" ) ],
+    'spp_var_list': [ $( printf "%s, " "${SPP_VAR_LIST[@]}" ) ],"
+fi
+settings="$settings
+  }"
+#
+# Add the relevant LSM SPP namelist variables to "settings" when running with
+# LSM SPP turned on.
+#
+settings="$settings
+'nam_sfcperts': {"
+if [ "${DO_LSM_SPP}" = "TRUE" ]; then
+    settings="$settings
+    'lndp_type': ${LNDP_TYPE},
+    'lndp_tau': [ $( printf "%s, " "${LSM_SPP_TSCALE[@]}" ) ],
+    'lndp_lscale': [ $( printf "%s, " "${LSM_SPP_LSCALE[@]}" ) ],
+    'iseed_lndp': [ $( printf "%s, " "${ISEED_LSM_SPP[@]}" ) ],
+    'lndp_var_list': [ $( printf "%s, " "${LSM_SPP_VAR_LIST[@]}" ) ],
+    'lndp_prt_list': [ $( printf "%s, " "${LSM_SPP_MAG_LIST[@]}" ) ],"
+fi
+settings="$settings
+  }"
 print_info_msg $VERBOSE "
 The variable \"settings\" specifying values of the namelist variables
 has been set as follows:

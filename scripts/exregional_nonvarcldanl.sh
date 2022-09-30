@@ -55,7 +55,7 @@ with FV3 for the specified cycle.
 #
 #-----------------------------------------------------------------------
 #
-valid_args=( "cycle_dir" "cycle_type" "mem_type" "workdir" "slash_ensmem_subdir" )
+valid_args=( "cycle_dir" "cycle_type" "gridspec_dir" "mem_type" "workdir" "slash_ensmem_subdir" )
 process_args valid_args "$@"
 #
 #-----------------------------------------------------------------------
@@ -195,7 +195,7 @@ if [ -r "${bkpath}/coupler.res" ]; then # Use background from warm restart
       ln_vrfy -s ${bkpath}/fv_tracer.res.tile1.nc.${iii}       fv3_tracer.${iii}
       ln_vrfy -s ${bkpath}/sfc_data.nc.${iii}                  fv3_sfcdata.${iii}
       ln_vrfy -s ${bkpath}/phy_data.nc.${iii}                  fv3_phydata.${iii}
-      ln_vrfy -s ${fixgriddir}/fv3_grid_spec.${iii}            fv3_grid_spec.${iii}
+      ln_vrfy -s ${gridspec_dir}/fv3_grid_spec.${iii}          fv3_grid_spec.${iii}
     done
   fi
   BKTYPE=0
@@ -216,14 +216,14 @@ fi
 
 process_bufr_path=${CYCLE_DIR}/process_bufr${cycle_tag}
 
-obs_files_source[0]=${process_bufr_path}/LightningInFV3LAM.dat
-obs_files_target[0]=LightningInFV3LAM.dat
+obs_files_source[0]=${process_bufr_path}/NASALaRC_cloud4fv3.bin
+obs_files_target[0]=NASALaRC_cloud4fv3.bin
 
-obs_files_source[1]=${process_bufr_path}/NASALaRC_cloud4fv3.bin
-obs_files_target[1]=NASALaRC_cloud4fv3.bin
+obs_files_source[1]=${process_bufr_path}/fv3_metarcloud.bin
+obs_files_target[1]=fv3_metarcloud.bin
 
-obs_files_source[2]=${process_bufr_path}/fv3_metarcloud.bin
-obs_files_target[2]=fv3_metarcloud.bin
+obs_files_source[2]=${process_bufr_path}/LightningInFV3LAM.dat
+obs_files_target[2]=LightningInFV3LAM.dat
 
 obs_number=${#obs_files_source[@]}
 for (( i=0; i<${obs_number}; i++ ));
@@ -276,7 +276,13 @@ if [ ${BKTYPE} -eq 1 ]; then
 else
   n_iolayouty=$(($IO_LAYOUT_Y))
 fi
-
+if [ ${DO_ENKF_RADAR_REF} == "TRUE" ]; then
+  l_qnr_from_qr=".true."
+fi
+if [ -r "${cycle_dir}/anal_radardbz_gsi${cycle_tag}/stdout" ]; then
+  l_precip_clear_only=".true."
+  l_qnr_from_qr=".true."
+fi
 
 cat << EOF > gsiparm.anl
 
@@ -301,7 +307,8 @@ cat << EOF > gsiparm.anl
    i_conserve_thetaV_iternum=3,
    l_cld_bld=.true.,
    l_numconc=.true.,
-   cld_bld_hgt=1200.0,
+   cld_bld_hgt=${cld_bld_hgt},
+   l_precip_clear_only=${l_precip_clear_only},
    build_cloud_frac_p=0.50,
    clear_cloud_frac_p=0.10,
    iclean_hydro_withRef_allcol=1,
@@ -310,6 +317,11 @@ cat << EOF > gsiparm.anl
    i_lightpcp=1,
    i_gsdqc=2,
    l_saturate_bkCloud=.true.,
+   l_qnr_from_qr=${l_qnr_from_qr},
+   n0_rain=100000000.0
+   i_T_Q_adjust=${i_T_Q_adjust},
+   l_rtma3d=${l_rtma3d},
+   i_precip_vertical_check=${i_precip_vertical_check},
  /
 EOF
 

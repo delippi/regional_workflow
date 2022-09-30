@@ -168,12 +168,41 @@ cyc=$hh
 #
 #-----------------------------------------------------------------------
 #
+
 len_fhr=${#fhr}
+if [ ${len_fhr} -eq 9 ]; then
+  post_min=${fhr:4:2}
+  if [ ${post_min} -lt 15 ]; then
+    post_min=00
+  fi
+else
+  post_min=00
+fi
+
+subh_fhr=${fhr}
 if [ ${len_fhr} -eq 2 ]; then
-  post_fhr=${fhr}
+  post_fhr=${fhr}00
 elif [ ${len_fhr} -eq 3 ]; then
   if [ "${fhr:0:1}" = "0" ]; then
-    post_fhr="${fhr:1}"
+    post_fhr="${fhr:1}00"
+  else
+    post_fhr=${fhr}00
+  fi
+elif [ ${len_fhr} -eq 9 ]; then
+  if [ "${fhr:0:1}" = "0" ]; then
+    if [ ${post_min} -eq 00 ]; then
+      post_fhr="${fhr:1:2}00"
+      subh_fhr="${fhr:0:3}"
+    else
+      post_fhr="${fhr:1:2}${fhr:4:2}"
+    fi
+  else
+    if [ ${post_min} -eq 00 ]; then
+      post_fhr="${fhr:0:3}00"
+      subh_fhr="${fhr:0:3}"
+    else
+      post_fhr="${fhr:0:3}${fhr:4:2}"
+    fi
   fi
 else
   print_err_msg_exit "\
@@ -181,8 +210,13 @@ The \${fhr} variable contains too few or too many characters:
   fhr = \"$fhr\""
 fi
 
+# replace fhr with subh_fhr
+echo "fhr=${fhr} and subh_fhr=${subh_fhr}"
+fhr=${subh_fhr}
+
 bgdawp=${postprd_dir}/${NET}.t${cyc}z.bgdawpf${fhr}.${tmmark}.grib2
 bgrd3d=${postprd_dir}/${NET}.t${cyc}z.bgrd3df${fhr}.${tmmark}.grib2
+bgifi=${postprd_dir}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2
 bgsfc=${postprd_dir}/${NET}.t${cyc}z.bgsfcf${fhr}.${tmmark}.grib2
 
 # extract the output fields for the testbed
@@ -192,6 +226,13 @@ if [[ ! -z ${TESTBED_FIELDS_FN} ]]; then
     wgrib2 ${bgdawp} | grep -F -f ${FIX_UPP}/${TESTBED_FIELDS_FN} | wgrib2 -i -grib ${bgsfc} ${bgdawp}
   else
     echo "${FIX_UPP}/${TESTBED_FIELDS_FN} not found"
+  fi
+fi
+if [[ ! -z ${TESTBED_FIELDS_FN2} ]]; then
+  if [[ -f ${FIX_UPP}/${TESTBED_FIELDS_FN2} ]]; then
+    wgrib2 ${bgrd3d} | grep -F -f ${FIX_UPP}/${TESTBED_FIELDS_FN2} | wgrib2 -i -append -grib ${bgsfc} ${bgrd3d}
+  else
+    echo "${FIX_UPP}/${TESTBED_FIELDS_FN2} not found"
   fi
 fi
 
@@ -205,14 +246,17 @@ fi
 basetime=$( date +%y%j%H%M -d "${yyyymmdd} ${hh}" )
 cp_vrfy ${bgdawp} ${comout}/${NET}.t${cyc}z.bgdawpf${fhr}.${tmmark}.grib2
 cp_vrfy ${bgrd3d} ${comout}/${NET}.t${cyc}z.bgrd3df${fhr}.${tmmark}.grib2
+cp_vrfy ${bgifi} ${comout}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2
 cp_vrfy ${bgsfc}  ${comout}/${NET}.t${cyc}z.bgsfcf${fhr}.${tmmark}.grib2
-ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgdawpf${fhr}.${tmmark}.grib2 ${comout}/BGDAWP_${basetime}${post_fhr}00
-ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgrd3df${fhr}.${tmmark}.grib2 ${comout}/BGRD3D_${basetime}${post_fhr}00
-ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgsfcf${fhr}.${tmmark}.grib2  ${comout}/BGSFC_${basetime}${post_fhr}00
+ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgdawpf${fhr}.${tmmark}.grib2 ${comout}/BGDAWP_${basetime}${post_fhr}
+ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgrd3df${fhr}.${tmmark}.grib2 ${comout}/BGRD3D_${basetime}${post_fhr}
+ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2 ${comout}/BGIFI_${basetime}${post_fhr}
+ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgsfcf${fhr}.${tmmark}.grib2  ${comout}/BGSFC_${basetime}${post_fhr}
 
 net4=$(echo ${NET:0:4} | tr '[:upper:]' '[:lower:]')
 ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgdawpf${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.prslev.f${fhr}.conus_3km.grib2
 ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgrd3df${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.natlev.f${fhr}.conus_3km.grib2
+ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgifif${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.ififip.f${fhr}.conus_3km.grib2
 ln_vrfy -sf --relative ${comout}/${NET}.t${cyc}z.bgsfcf${fhr}.${tmmark}.grib2  ${comout}/${net4}.t${cyc}z.testbed.f${fhr}.conus_3km.grib2
 # Remap to additional output grids if requested
 if [ ${#ADDNL_OUTPUT_GRIDS[@]} -gt 0 ]; then
@@ -232,7 +276,7 @@ if [ ${#ADDNL_OUTPUT_GRIDS[@]} -gt 0 ]; then
 
   for grid in ${ADDNL_OUTPUT_GRIDS[@]}
   do
-    for leveltype in dawp rd3d sfc
+    for leveltype in dawp rd3d ifi sfc
     do
       
       eval grid_specs=\$grid_specs_${grid}
@@ -247,7 +291,7 @@ if [ ${#ADDNL_OUTPUT_GRIDS[@]} -gt 0 ]; then
            -new_grid_vectors "UGRD:VGRD:USTM:VSTM:VUCSH:VVCSH" \
            -new_grid_interpolation bilinear \
            -if ":(WEASD|APCP|NCPCP|ACPCP|SNOD):" -new_grid_interpolation budget -fi \
-           -if ":(NCONCD|NCCICE|SPNCR|CLWMR|CICE|RWMR|SNMR|GRLE|PMTF|PMTC|REFC|CSNOW|CICEP|CFRZR|CRAIN|LAND|ICEC|TMP:surface|VEG|CCOND|SFEXC|MSLMA|PRES:tropopause|LAI|HPBL|HGT:planetary boundary layer):" -new_grid_interpolation neighbor -fi \
+           -if ":(NCONCD|NCCICE|SPNCR|CLWMR|CICE|RWMR|SNMR|GRLE|PMTF|PMTC|REFC|CSNOW|CICEP|CFRZR|CRAIN|LAND|ICEC|TMP:surface|VEG|CCOND|SFEXC|MSLMA|PRES:tropopause|LAI|HPBL|HGT:planetary boundary layer):|ICPRB|SIPD|ICSEV" -new_grid_interpolation neighbor -fi \
            -new_grid ${grid_specs} ${subdir}/${fhr}/tmp_${grid}.grib2 &
       else
          wgrib2 ${infile} -set_bitmap 1 -set_grib_type c3 -new_grid_winds grid \
@@ -276,12 +320,16 @@ if [ ${#ADDNL_OUTPUT_GRIDS[@]} -gt 0 ]; then
          ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.natlev.f${fhr}.conus_3km.grib2
       fi
 
+      if [ $leveltype = 'ifi' ]; then
+         ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.ififip.f${fhr}.conus_3km.grib2
+      fi
+
       if [ $leveltype = 'sfc' ]; then
          ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${net4}.t${cyc}z.testbed.f${fhr}.conus_3km.grib2
       fi
 
       # Link output for transfer from Jet to web
-      ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${grid}_grid/BG${leveltype^^}_${basetime}${post_fhr}00
+      ln_vrfy -fs --relative ${comout}/${grid}_grid/${NET}.t${cyc}z.bg${leveltype}f${fhr}.${tmmark}.grib2 ${comout}/${grid}_grid/BG${leveltype^^}_${basetime}${post_fhr}
     done
   done
 fi

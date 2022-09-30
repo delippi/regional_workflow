@@ -180,7 +180,19 @@ cyc=$hh
 dyn_file="${run_dir}/dynf${fhr}.nc"
 phy_file="${run_dir}/phyf${fhr}.nc"
 
-post_time=$( date --utc --date "${yyyymmdd} ${hh} UTC + ${fhr} hours" "+%Y%m%d%H" )
+len_fhr=${#fhr}
+if [ ${len_fhr} -eq 9 ]; then
+  post_fhr=${fhr:0:3}
+  post_min=${fhr:4:2}
+  if [ ${post_min} -lt 15 ]; then # should use $nsout_min instead of 15
+    post_min=00
+  fi
+else
+  post_fhr=${fhr}
+  post_min=00
+fi
+
+post_time=$( date --utc --date "${yyyymmdd} ${hh} UTC + ${post_fhr} hours" "+%Y%m%d%H" )
 post_yyyy=${post_time:0:4}
 post_mm=${post_time:4:2}
 post_dd=${post_time:6:2}
@@ -191,7 +203,7 @@ cat > itag <<EOF
  fileName='${dyn_file}'
  IOFORM='netcdf'
  grib='grib2'
- DateStr='${post_yyyy}-${post_mm}-${post_dd}_${post_hh}:00:00'
+ DateStr='${post_yyyy}-${post_mm}-${post_dd}_${post_hh}:${post_min}:00'
  MODELNAME='${POST_FULL_MODEL_NAME}'
  SUBMODELNAME='${POST_SUB_MODEL_NAME}'
  fileNameFlux='${phy_file}'
@@ -211,7 +223,7 @@ EOF
 #-----------------------------------------------------------------------
 #
 cp_vrfy ${EMC_POST_DIR}/parm/nam_micro_lookup.dat ./eta_micro_lookup.dat
-ln_vrfy -snf ${FIX_CRTM}/*bin ./
+ln_vrfy -snf ${FIX_UPP_CRTM}/*bin ./
 if [ ${USE_CUSTOM_POST_CONFIG_FILE} = "TRUE" ]; then
   post_config_fp="${CUSTOM_POST_CONFIG_FP}"
   post_params_fp="${CUSTOM_POST_PARAMS_FP}"
@@ -241,9 +253,9 @@ cp_vrfy ${EXECDIR}/upp.x .
 if [ ${PREDEF_GRID_NAME} = "RRFS_CONUS_3km_HRRRIC" ]; then
   grid_specs_rrfs="lambert:-97.5:38.500000 237.826355:1746:3000 21.885885:1014:3000"
 elif [ ${PREDEF_GRID_NAME} = "RRFS_CONUS_3km" ]; then
-  grid_specs_rrfs="lambert:-97.5:38.500000 237.280700:1799:3000 21.138120:1057:3000"
+  grid_specs_rrfs="lambert:-97.5:38.500000 237.280472:1799:3000 21.138123:1059:3000"
 elif [ ${PREDEF_GRID_NAME} = "RRFS_NA_3km" ]; then
-  grid_specs_rrfs="rot-ll:248.000000:-42.000000:0.000000 309.000000:4081:0.025000 -33.0000000:2641:0.025000"
+  grid_specs_rrfs="rot-ll:247.000000:-35.000000:0.000000 299.000000:4881:0.025000 -37.0000000:2961:0.025000"
 elif [ ${PREDEF_GRID_NAME} = "GSD_RAP13km" ]; then
   grid_specs_rrfs="rot-ll:254.000000:-36.000000:0.000000 304.174600:956:0.1169118 -48.5768500:831:0.1170527"
 fi
@@ -291,14 +303,34 @@ zero exit code."
 # files, since they may or may not be three digits long, depending on the
 # length of the forecast.
 #
+# A separate ${subh_fhr} is needed for subhour post.
 #-----------------------------------------------------------------------
 #
 len_fhr=${#fhr}
+subh_fhr=${fhr}
 if [ ${len_fhr} -eq 2 ]; then
   post_fhr=${fhr}
 elif [ ${len_fhr} -eq 3 ]; then
   if [ "${fhr:0:1}" = "0" ]; then
     post_fhr="${fhr:1}"
+  else
+    post_fhr=${fhr}
+  fi
+elif [ ${len_fhr} -eq 9 ]; then
+  if [ "${fhr:0:1}" = "0" ]; then
+    if [ ${post_min} -eq 00 ]; then
+      post_fhr="${fhr:1:2}"
+      subh_fhr="${fhr:0:3}"
+    else
+      post_fhr="${fhr:1:2}.${fhr:4:2}"
+    fi
+  else
+    if [ ${post_min} -eq 00 ]; then
+      post_fhr="${fhr:0:3}"
+      subh_fhr="${fhr:0:3}"
+    else
+      post_fhr="${fhr:0:3}.${fhr:4:2}"
+    fi
   fi
 else
   print_err_msg_exit "\
@@ -307,12 +339,14 @@ The \${fhr} variable contains too few or too many characters:
 fi
 
 
-bgdawp=${postprd_dir}/${NET}.t${cyc}z.bgdawpf${fhr}.${tmmark}.grib2
-bgrd3d=${postprd_dir}/${NET}.t${cyc}z.bgrd3df${fhr}.${tmmark}.grib2
-bgsfc=${postprd_dir}/${NET}.t${cyc}z.bgsfcf${fhr}.${tmmark}.grib2
+bgdawp=${postprd_dir}/${NET}.t${cyc}z.bgdawpf${subh_fhr}.${tmmark}.grib2
+bgrd3d=${postprd_dir}/${NET}.t${cyc}z.bgrd3df${subh_fhr}.${tmmark}.grib2
+bgsfc=${postprd_dir}/${NET}.t${cyc}z.bgsfcf${subh_fhr}.${tmmark}.grib2
+bgifi=${postprd_dir}/${NET}.t${cyc}z.bgifif${subh_fhr}.${tmmark}.grib2
 
 wgrib2 PRSLEV.GrbF${post_fhr} -set center 7 -grib ${bgdawp}
 wgrib2 NATLEV.GrbF${post_fhr} -set center 7 -grib ${bgrd3d}
+wgrib2 IFIFIP.GrbF${post_fhr} -set center 7 -grib ${bgifi}
 
 #
 #-----------------------------------------------------------------------
