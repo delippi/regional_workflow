@@ -984,7 +984,10 @@ the <task> tag to be identical to the ones above for other output times.
     {%- endif %}
 
     <dependency>
+     <and>
       <taskdep task="&VX_GRIDSTAT_TN;{{ uscore_ensmem_name }}"/>
+      <taskdep task="&VX_GRIDSTAT_03h_TN;{{ uscore_ensmem_name }}"/>
+     </and>
     </dependency>
 
   </task>
@@ -1019,7 +1022,10 @@ the <task> tag to be identical to the ones above for other output times.
     {%- endif %}
 
     <dependency>
+     <and>
       <taskdep task="&VX_GRIDSTAT_TN;{{ uscore_ensmem_name }}"/>
+      <taskdep task="&VX_GRIDSTAT_06h_TN;{{ uscore_ensmem_name }}"/>
+     </and>
     </dependency>
 
   </task>

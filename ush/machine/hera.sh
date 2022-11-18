@@ -49,11 +49,11 @@ PARTITION_FCST=${PARTITION_FCST:-"hera"}
 QUEUE_FCST=${QUEUE_FCST:-"batch"}
 
 # UFS SRW App specific paths
-FIXgsm=${FIXgsm:-"/scratch1/NCEPDEV/global/glopara/fix/fix_am"}
-FIXaer=${FIXaer:-"/scratch1/NCEPDEV/global/glopara/fix/fix_aer"}
-FIXlut=${FIXlut:-"/scratch1/NCEPDEV/global/glopara/fix/fix_lut"}
-TOPO_DIR=${TOPO_DIR:-"/scratch1/NCEPDEV/global/glopara/fix/fix_orog"}
-SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/scratch1/NCEPDEV/global/glopara/fix/fix_sfc_climo"}
+FIXgsm=${FIXgsm:-"/scratch2/BMC/det/UFS_SRW_App/develop/fix/fix_am"}
+FIXaer=${FIXaer:-"/scratch2/BMC/det/UFS_SRW_App/develop/fix/fix_aer"}
+FIXlut=${FIXlut:-"/scratch2/BMC/det/UFS_SRW_App/develop/fix/fix_lut"}
+TOPO_DIR=${TOPO_DIR:-"/scratch2/BMC/det/UFS_SRW_App/develop/fix/fix_orog"}
+SFC_CLIMO_INPUT_DIR=${SFC_CLIMO_INPUT_DIR:-"/scratch2/BMC/det/UFS_SRW_App/develop/fix/fix_sfc_climo"}
 FIXLAM_NCO_BASEDIR=${FIXLAM_NCO_BASEDIR:-"/scratch2/BMC/det/FV3LAM_pregen"}
 
 # Run commands for executables
@@ -63,8 +63,8 @@ RUN_CMD_FCST="srun"
 RUN_CMD_POST="srun"
 
 # MET/METplus-Related Paths
-MET_INSTALL_DIR=${MET_INSTALL_DIR:-"/contrib/met/10.0.0"}
-METPLUS_PATH=${METPLUS_PATH:-"/contrib/METplus/METplus-4.0.0"}
+MET_INSTALL_DIR=${MET_INSTALL_DIR:-"/contrib/met/10.1.0"}
+METPLUS_PATH=${METPLUS_PATH:-"/contrib/METplus/METplus-4.1.0"}
 CCPA_OBS_DIR=${CCPA_OBS_DIR:-"/scratch2/BMC/det/UFS_SRW_app/develop/obs_data/ccpa/proc"}
 MRMS_OBS_DIR=${MRMS_OBS_DIR:-"/scratch2/BMC/det/UFS_SRW_app/develop/obs_data/mrms/proc"}
 NDAS_OBS_DIR=${NDAS_OBS_DIR:-"/scratch2/BMC/det/UFS_SRW_app/develop/obs_data/ndas/proc"}
