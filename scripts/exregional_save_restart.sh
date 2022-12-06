@@ -60,6 +60,7 @@ valid_args=( \
 "run_dir" \
 "nwges_dir" \
 "fhr" \
+"fmin" \
 "cycle_type" \
 )
 process_args valid_args "$@"
@@ -83,15 +84,22 @@ print_input_args valid_args
 #
 yyyymmdd=${cdate:0:8}
 hh=${cdate:8:2}
+if [ ${#cdate} -ge 12 ]; then
+   mn=${cdate:10:2}
+else
+   mn=00
+fi
 cyc=$hh
 
-save_time=$( date --utc --date "${yyyymmdd} ${hh} UTC + ${fhr} hours" "+%Y%m%d%H" )
+save_time=$( date --utc --date "${yyyymmdd} ${hh}${mn} UTC + ${fhr} hours ${fmin} minutes" "+%Y%m%d%H%M" )
 save_yyyy=${save_time:0:4}
 save_mm=${save_time:4:2}
 save_dd=${save_time:6:2}
 save_hh=${save_time:8:2}
+save_mn=${save_time:10:2}
 
-
+set -x
+echo "Save time: "${save_yyyy} ${save_mm} ${save_dd} ${save_hh} ${save_mn}
 # 
 #-----------------------------------------------------------------------
 #
@@ -107,7 +115,7 @@ filelistcold="gfs_data.tile7.halo0.nc sfc_data.tile7.halo0.nc"
 n_iolayouty=$(($IO_LAYOUT_Y-1))
 list_iolayout=$(seq 0 $n_iolayouty)
 
-restart_prefix=${save_yyyy}${save_mm}${save_dd}.${save_hh}0000
+restart_prefix=${save_yyyy}${save_mm}${save_dd}.${save_hh}${save_mn}00
 if [ ! -r ${nwges_dir}/INPUT/gfs_ctrl.nc ]; then
   cp_vrfy $run_dir/INPUT/gfs_ctrl.nc ${nwges_dir}/INPUT/gfs_ctrl.nc
   if [ -r ${run_dir}/INPUT/coupler.res ]; then  # warm start
@@ -150,23 +158,31 @@ if [ -r "$run_dir/RESTART/${restart_prefix}.coupler.res" ]; then
       done
     done
   fi
-  echo " ${fhr} forecast from ${yyyymmdd}${hh} is ready " #> ${nwges_dir}/RESTART/restart_done_f${fhr}
+  echo " ${fhr}${fmin} forecast from ${yyyymmdd}${hh}${mn} is ready " #> ${nwges_dir}/RESTART/restart_done_f${fhr}${fmin}
 else
 
-  FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS}
+  ((FCST_LEN_thiscycle = 60*FCST_LEN_HRS ))
   if [ ${cycle_type} == "spinup" ]; then
-    FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS_SPINUP}
+     FCST_LEN_thiscycle=${FCST_LEN_SPINUP}
   else
-    num_fhrs=( "${#FCST_LEN_HRS_CYCLES[@]}" )
-    ihh=`expr ${hh} + 0`
-    if [ ${num_fhrs} -gt ${ihh} ]; then
-       FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS_CYCLES[${ihh}]}
-    fi
+     if [ ! -z "${CYCLE_LEN_MINS}" ]; then
+        FCST_LEN_thiscycle=${CYCLE_LEN_MINS}
+     else
+        num_fhrs=( "${#FCST_LEN_HRS_CYCLES[@]}" )
+        ihh=`expr ${hh} + 0`
+        if [ ${num_fhrs} -gt ${ihh} ]; then
+           temp=${FCST_LEN_HRS_CYCLES[${ihh}]}
+           (( FCST_LEN_thiscycle = 60*temp ))
+        else
+           (( FCST_LEN_thiscycle = 60*FCST_LEN_HRS ))
+        fi
+     fi
   fi
-  print_info_msg "$VERBOSE" " The forecast length for cycle (\"${hh}\") is
-                 ( \"${FCST_LEN_HRS_thiscycle}\") "
+  print_info_msg "$VERBOSE" " The forecast length for cycle (\"${hh}${mn}\") is
+                 ( \"${FCST_LEN_thiscycle}\") minutes"
 
-  if [ -r "$run_dir/RESTART/coupler.res" ] && [ ${fhr} -eq ${FCST_LEN_HRS_thiscycle} ] ; then
+  ((total_fmins = 60*fhr + fmin))
+  if [ -r "$run_dir/RESTART/coupler.res" ] && [ ${total_fmins} -eq ${FCST_LEN_thiscycle} ] ; then
     for file in ${filelist}; do
        mv_vrfy $run_dir/RESTART/${file} ${nwges_dir}/RESTART/${restart_prefix}.${file}
     done
@@ -183,9 +199,9 @@ else
         done
       done
     fi
-    echo " ${fhr} forecast from ${yyyymmdd}${hh} is ready " #> ${nwges_dir}/RESTART/restart_done_f${fhr}
+    echo " ${fhr}${fmin} forecast from ${yyyymmdd}${hh}${mn} is ready " #> ${nwges_dir}/RESTART/restart_done_f${fhr}${fmin}
   else
-    echo "This forecast hour does not need to save restart: ${yyyymmdd}${hh}f${fhr}"
+    echo "This forecast hour does not need to save restart: ${yyyymmdd}${hh}${mn}f${fhr}${fmin}"
   fi
 fi
 #

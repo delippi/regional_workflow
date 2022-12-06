@@ -359,6 +359,8 @@ relative_or_null=""
 n_iolayouty=$(($IO_LAYOUT_Y-1))
 list_iolayout=$(seq 0 $n_iolayouty)
 
+set -x 
+
 if [ ${BKTYPE} -eq 1 ]; then
   target="gfs_data.tile${TILE_RGNL}.halo${NH0}.nc"
 else
@@ -491,7 +493,11 @@ ln_vrfy -sf ${relative_or_null} ${NEMS_YAML_FP} ${run_dir}
 
 if [ ${BKTYPE} -eq 0 ]; then
   # cycling, using namelist for cycling forecast
-  cp_vrfy ${FV3_NML_RESTART_FP} ${run_dir}/input.nml
+  if [ ${cycle_type} == "free" ]; then
+    cp_vrfy ${FV3_NML_FREE_FP} ${run_dir}/input.nml
+  else
+    cp_vrfy ${FV3_NML_RESTART_FP} ${run_dir}/input.nml
+  fi
 else
   if [ -f "INPUT/cycle_surface.done" ]; then
   # namelist for cold start with surface cycle
@@ -502,7 +508,7 @@ else
   fi
 fi
 
-if [ "${DO_ENSEMBLE}" = TRUE ] && ([ "${DO_SPP}" = TRUE ] || [ "${DO_SPPT}" = TRUE ] || [ "${DO_SHUM}" = TRUE ] \
+if [ "${DO_ENSEMBLE}" = TRUE ] && ([ "${DO_SPP}" = TRUE ] || [ "${DO_SPPT}" = TRUE ] || [ "${DO_SHUM}" = TRUE ] || \
    [ "${DO_SKEB}" = TRUE ] || [ "${DO_LSM_SPP}" =  TRUE ]); then
   cp ${run_dir}/input.nml ${run_dir}/input.nml_base
   set_FV3nml_ens_stoch_seeds cdate="$cdate" || print_err_msg_exit "\

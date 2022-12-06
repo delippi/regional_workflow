@@ -79,16 +79,21 @@ print_input_args valid_args
 #
 #-----------------------------------------------------------------------
 #
-START_DATE=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
+START_DATE="${CDATE:0:8} ${CDATE:8:4}"
 
-YYYYMMDDHH=$(date +%Y%m%d%H -d "${START_DATE}")
+YYYYMMDDHHmm=$(date +%Y%m%d%H%M -d "${START_DATE}")
 JJJ=$(date +%j -d "${START_DATE}")
 
-YYYY=${YYYYMMDDHH:0:4}
-MM=${YYYYMMDDHH:4:2}
-DD=${YYYYMMDDHH:6:2}
-HH=${YYYYMMDDHH:8:2}
-YYYYMMDD=${YYYYMMDDHH:0:8}
+YYYY=${YYYYMMDDHHmm:0:4}
+MM=${YYYYMMDDHHmm:4:2}
+DD=${YYYYMMDDHHmm:6:2}
+HH=${YYYYMMDDHHmm:8:2}
+if [ ${#START_DATE} -ge 12 ]; then
+   mm=${YYYYMMDDHHmm:10:2}
+else
+   mm=00
+fi
+YYYYMMDD=${YYYYMMDDHHmm:0:8}
 #
 #-----------------------------------------------------------------------
 #
@@ -110,15 +115,15 @@ cd_vrfy ${modelinputdir}
 fg_restart_dirname=fcst_fv3lam
 fg_restart_dirname_spinup=fcst_fv3lam_spinup
 
-YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${DA_CYCLE_INTERV} hours ago" )
-bkpath=${ENSCTRL_NWGES_BASEDIR}/${YYYYMMDDHHmInterv}/${fg_restart_dirname}/RESTART  # cycling, use background from RESTART
-bkpath_spinup=${ENSCTRL_NWGES_BASEDIR}/${YYYYMMDDHHmInterv}/${fg_restart_dirname_spinup}/RESTART  # cycling, use background from RESTART
+YYYYMMDDHHmInterv=$( date +%Y%m%d%H%M -d "${START_DATE} ${DA_CYCLE_INTERV} minutes ago" )
+bkpath=${ENSCTRL_NWGES_BASEDIR}/${YYYYMMDDHHmInterv}/mem0001/${fg_restart_dirname}/RESTART  # cycling, use background from RESTART
+bkpath_spinup=${ENSCTRL_NWGES_BASEDIR}/${YYYYMMDDHHmInterv}/mem0001/${fg_restart_dirname_spinup}/RESTART  # cycling, use background from RESTART
 
 #
 #   the restart file from FV3 has a name like: ${YYYYMMDD}.${HH}0000.fv_core.res.tile1.nc
 #
 
-restart_prefix="${YYYYMMDD}.${HH}0000."
+restart_prefix="${YYYYMMDD}.${HH}${mm}00."
 checkfile=${bkpath}/${restart_prefix}coupler.res
 checkfile_spinup=${bkpath_spinup}/${restart_prefix}coupler.res
 if [ -r "${checkfile}" ] ; then

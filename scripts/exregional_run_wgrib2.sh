@@ -170,7 +170,7 @@ cyc=$hh
 #
 
 len_fhr=${#fhr}
-if [ ${len_fhr} -eq 9 ]; then
+if [ ${len_fhr} -eq 5 ]; then
   post_min=${fhr:4:2}
   if [ ${post_min} -lt 15 ]; then
     post_min=00
@@ -188,7 +188,7 @@ elif [ ${len_fhr} -eq 3 ]; then
   else
     post_fhr=${fhr}00
   fi
-elif [ ${len_fhr} -eq 9 ]; then
+elif [ ${len_fhr} -eq 5 ]; then
   if [ "${fhr:0:1}" = "0" ]; then
     if [ ${post_min} -eq 00 ]; then
       post_fhr="${fhr:1:2}00"

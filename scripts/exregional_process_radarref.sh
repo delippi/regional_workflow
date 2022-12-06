@@ -131,16 +131,20 @@ esac
 #
 #-----------------------------------------------------------------------
 #
-set -x
-START_DATE=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
-YYYYMMDDHH=$(date +%Y%m%d%H -d "${START_DATE}")
+START_DATE="${CDATE:0:8} ${CDATE:8:4}"
+YYYYMMDDHHmm=$(date +%Y%m%d%H%M -d "${START_DATE}")
 JJJ=$(date +%j -d "${START_DATE}")
 
-YYYY=${YYYYMMDDHH:0:4}
-MM=${YYYYMMDDHH:4:2}
-DD=${YYYYMMDDHH:6:2}
-HH=${YYYYMMDDHH:8:2}
-YYYYMMDD=${YYYYMMDDHH:0:8}
+YYYY=${YYYYMMDDHHmm:0:4}
+MM=${YYYYMMDDHHmm:4:2}
+DD=${YYYYMMDDHHmm:6:2}
+HH=${YYYYMMDDHHmm:8:2}
+if [ ${#CDATE} -lt 12 ]; then
+   mm=00
+else
+   mm=${YYYYMMDDHHmm:10:2}
+fi
+YYYYMMDD=${YYYYMMDDHHmm:0:8}
 
 #
 #-----------------------------------------------------------------------
@@ -242,23 +246,37 @@ esac
   echo "RADARREFL_MINS = ${RADARREFL_MINS[@]}"
 
 # Link to the MRMS operational data
+  found=0
   for min in ${RADARREFL_MINS[@]}
   do
-    min=$( printf %2.2i $((bigmin+min)) )
-    echo "Looking for data valid:"${YYYY}"-"${MM}"-"${DD}" "${HH}":"${min}
+    if [ ${found} -eq 1 ]; then
+       break
+    fi
+    if [ ${min} -lt 0 ]; then
+      sgn="-"
+    else
+      sgn="+"
+    fi
+    min=`date -d "${YYYYMMDD} ${HH}${bigmin} ${sgn}${min} minutes" +%M`
+    hr=`date -d "${YYYYMMDD} ${HH}${bigmin} ${sgn}${min} minutes" +%H`
+    dy=`date -d "${YYYYMMDD} ${HH}${bigmin} ${sgn}${min} minutes" +%d`
+    mon=`date -d "${YYYYMMDD} ${HH}${bigmin} ${sgn}${min} minutes" +%m`
+    yr=`date -d "${YYYYMMDD} ${HH}${bigmin} ${sgn}${min} minutes" +%Y`
+    echo "Looking for data valid:${yr}-${mon}-${dy} ${hr}:${min}"
     s=0
     while [[ $s -le 59 ]]; do
       ss=$(printf %2.2i ${s})
-      nsslfile=${NSSL}/*${mrms}_00.50_${YYYY}${MM}${DD}-${HH}${min}${ss}.${obs_appendix}
+      nsslfile=${NSSL}/*${mrms}_00.50_${yr}${mon}${dy}-${hr}${min}${ss}.${obs_appendix}
       if [ -s $nsslfile ]; then
         echo 'Found '${nsslfile}
-        nsslfile1=*${mrms}_*_${YYYY}${MM}${DD}-${HH}${min}*.${obs_appendix}
+        nsslfile1=*${mrms}_*_${yr}${mon}${dy}-${hr}${min}*.${obs_appendix}
         numgrib2=$(ls ${NSSL}/${nsslfile1} | wc -l)
         echo 'Number of GRIB-2 files: '${numgrib2}
         if [ ${numgrib2} -ge 10 ] && [ ! -e filelist_mrms ]; then
           cp ${NSSL}/${nsslfile1} . 
           ls ${nsslfile1} > filelist_mrms 
-          echo 'Creating links for ${YYYY}${MM}${DD}-${HH}${min}'
+          echo "Creating links for ${yr}${mon}${dy}-${hr}${min}"
+          found=1
         fi
       fi
       ((s+=1))
@@ -286,7 +304,6 @@ esac
      continue
   fi
 
-
 #-----------------------------------------------------------------------
 #
 # copy bufr table from fix directory
@@ -305,7 +322,7 @@ esac
 #                   = 4 NSSL 4 tiles binary
 #                   = 8 NSSL 8 tiles netcdf
 #   fv3_io_layout_y : subdomain of restart files
-#   analysis_time : process obs used for this analysis date (YYYYMMDDHH)
+#   analysis_time : process obs used for this analysis date (YYYYMMDDHHmm)
 #   dataPath      : path of the radar reflectivity mosaic files.
 #
 #-----------------------------------------------------------------------
@@ -319,7 +336,7 @@ fi
 cat << EOF > namelist.mosaic
    &setup
     tversion=1,
-    analysis_time = ${YYYYMMDDHH},
+    analysis_time = ${YYYYMMDDHHmm},
     dataPath = './',
     fv3_io_layout_y=${n_iolayouty},
    /

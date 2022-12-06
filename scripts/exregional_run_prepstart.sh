@@ -135,16 +135,20 @@ esac
 #
 #-----------------------------------------------------------------------
 #
-START_DATE=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
-
-YYYYMMDDHH=$(date +%Y%m%d%H -d "${START_DATE}")
+START_DATE="${CDATE:0:8} ${CDATE:8:4}"
+YYYYMMDDHHmm=$(date +%Y%m%d%H%M -d "${START_DATE}")
 JJJ=$(date +%j -d "${START_DATE}")
 
-YYYY=${YYYYMMDDHH:0:4}
-MM=${YYYYMMDDHH:4:2}
-DD=${YYYYMMDDHH:6:2}
-HH=${YYYYMMDDHH:8:2}
-YYYYMMDD=${YYYYMMDDHH:0:8}
+YYYY=${YYYYMMDDHHmm:0:4}
+MM=${YYYYMMDDHHmm:4:2}
+DD=${YYYYMMDDHHmm:6:2}
+HH=${YYYYMMDDHHmm:8:2}
+if [ ${#START_DATE} -ge 12 ]; then
+   mm=${YYYYMMDDHHmm:10:2}
+else
+   mm=00
+fi
+YYYYMMDD=${YYYYMMDDHHmm:0:8}
 
 current_time=$(date "+%T")
 
@@ -174,14 +178,14 @@ BKTYPE=0
 if [ ${cycle_type} == "spinup" ]; then
   echo "spin up cycle"
   for cyc_start in "${CYCL_HRS_SPINSTART[@]}"; do
-    if [ ${HH} -eq ${cyc_start} ]; then
+    if ( [ ${HH} -eq ${cyc_start} ] && [ ${mm} -eq 00 ] ; ) then
       BKTYPE=1
     fi
   done
 else
   echo " product cycle"
   for cyc_start in "${CYCL_HRS_PRODSTART[@]}"; do
-    if [ ${HH} -eq ${cyc_start} ]; then
+    if ( [ ${HH} -eq ${cyc_start} ] && [ ${mm} -eq 00 ] ; ) then
       if [ ${DO_SPINUP} == "TRUE" ]; then
         BKTYPE=2   # using 1-h forecast from spinup cycle
       else
@@ -209,7 +213,7 @@ if [ ${DO_SURFACE_CYCLE} == "TRUE" ]; then  # cycle surface fields
     fi
   else
     for cyc_start in "${CYCL_HRS_PRODSTART[@]}"; do
-       if [ ${HH} -eq ${cyc_start} ]; then
+       if ( [ ${HH} -eq ${cyc_start} ] && [ ${mm} -eq 00 ] ; ) then
           SFC_CYC=1  # cold start
        fi
     done
@@ -219,7 +223,7 @@ fi
 cd_vrfy ${modelinputdir}
 
 if [ ${BKTYPE} -eq 1 ] ; then  # cold start, use prepare cold strat initial files from ics
-    bkpath=${lbcs_root}/$YYYYMMDD$HH${SLASH_ENSMEM_SUBDIR}/ics
+    bkpath=${lbcs_root}/${YYYYMMDDHHmm}${SLASH_ENSMEM_SUBDIR}/ics
     if [ -r "${bkpath}/gfs_data.tile7.halo0.nc" ]; then
       cp_vrfy ${bkpath}/gfs_bndy.tile7.000.nc gfs_bndy.tile7.000.nc        
       cp_vrfy ${bkpath}/gfs_ctrl.nc gfs_ctrl.nc        
@@ -230,7 +234,7 @@ if [ ${BKTYPE} -eq 1 ] ; then  # cold start, use prepare cold strat initial file
       ln_vrfy -s ${bkpath}/sfc_data.tile7.halo0.nc bk_sfc_data.tile7.halo0.nc
       print_info_msg "$VERBOSE" "cold start from $bkpath"
       if [ ${SAVE_CYCLE_LOG} == "TRUE" ] ; then
-        echo "${YYYYMMDDHH}(${cycle_type}): cold start at ${current_time} from $bkpath " >> ${EXPTDIR}/log.cycles
+        echo "${YYYYMMDDHHmm}(${cycle_type}): cold start at ${current_time} from $bkpath " >> ${EXPTDIR}/log.cycles
       fi
     else
       print_err_msg_exit "Error: cannot find cold start initial condition from : ${bkpath}"
@@ -251,7 +255,7 @@ else
      fg_restart_dirname=fcst_fv3lam
   fi
 
-  YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${DA_CYCLE_INTERV} hours ago" )
+  YYYYMMDDHHmInterv=$( date +%Y%m%d%H%M -d "${START_DATE} ${DA_CYCLE_INTERV} minutes ago" )
   bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${fg_restart_dirname}/RESTART  # cycling, use background from RESTART
 
 #   let us figure out which backgound is available
@@ -260,16 +264,16 @@ else
 #   But the restart files for the forecast length has a name like: fv_core.res.tile1.nc
 #   So the defination of restart_prefix needs a "." at the end.
 #
-  restart_prefix="${YYYYMMDD}.${HH}0000."
+  restart_prefix="${YYYYMMDD}.${HH}${mm}00."
   n=${DA_CYCLE_INTERV}
-  while [[ $n -le 6 ]] ; do
+  while [[ $n -le 360 ]] ; do
     checkfile=${bkpath}/${restart_prefix}coupler.res
     if [ -r "${checkfile}" ] ; then
       print_info_msg "$VERBOSE" "Found ${checkfile}; Use it as background for analysis "
       break
     else
       n=$((n + ${DA_CYCLE_INTERV}))
-      YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${n} hours ago" )
+      YYYYMMDDHHmInterv=$( date +%Y%m%d%H%M -d "${START_DATE} $n minutes ago" )
       bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${fg_restart_dirname}/RESTART  # cycling, use background from RESTART
       print_info_msg "$VERBOSE" "Trying this path: ${bkpath}"
     fi
@@ -280,19 +284,19 @@ else
   if [ ! -r "${checkfile}" ] && [ ${BKTYPE} -eq 2 ]; then
      print_info_msg "$VERBOSE" "cannot find background from spin-up cycle, try product cycle"
      fg_restart_dirname=fcst_fv3lam
-     YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${DA_CYCLE_INTERV} hours ago" )
+     YYYYMMDDHHmInterv=$( date +%Y%m%d%H%M -d "${START_DATE} ${DA_CYCLE_INTERV} minutes ago" )
      bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${fg_restart_dirname}/RESTART  # cycling, use background from RESTART
-#
-     restart_prefix="${YYYYMMDD}.${HH}0000."
+
+     restart_prefix="${YYYYMMDD}.${HH}${mm}00."
      n=${DA_CYCLE_INTERV}
-     while [[ $n -le 6 ]] ; do
+     while [[ $n -le 360 ]] ; do
        checkfile=${bkpath}/${restart_prefix}coupler.res
        if [ -r "${checkfile}" ] ; then
          print_info_msg "$VERBOSE" "Found ${checkfile}; Use it as background for analysis "
          break
        else
          n=$((n + ${DA_CYCLE_INTERV}))
-         YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${n} hours ago" )
+         YYYYMMDDHHmInterv=$( date +%Y%m%d%H%M -d "${START_DATE} $n minutes ago" )
          bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${fg_restart_dirname}/RESTART  # cycling, use background from RESTART
          print_info_msg "$VERBOSE" "Trying this path: ${bkpath}"
        fi
@@ -323,7 +327,7 @@ else
     fi
     cp_vrfy ${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${fg_restart_dirname}/INPUT/gfs_ctrl.nc  gfs_ctrl.nc
     if [ ${SAVE_CYCLE_LOG} == "TRUE" ] ; then
-      echo "${YYYYMMDDHH}(${cycle_type}): warm start at ${current_time} from ${checkfile} " >> ${EXPTDIR}/log.cycles
+      echo "${YYYYMMDDHHmm}(${cycle_type}): warm start at ${current_time} from ${checkfile} " >> ${EXPTDIR}/log.cycles
     fi
 #
 # remove checksum from restart files. Checksum will cause trouble if model initializes from analysis
@@ -407,13 +411,13 @@ Please ensure that you have built this executable."
 
      snowice_reference_time=$(wgrib2 -t latest.SNOW_IMS | tail -1) 
      if [ ${SAVE_CYCLE_LOG} == "TRUE" ] ; then
-       echo "${YYYYMMDDHH}(${cycle_type}): update snow/ice using ${snowice_reference_time}" >> ${EXPTDIR}/log.cycles
+       echo "${YYYYMMDDHHmm}(${cycle_type}): update snow/ice using ${snowice_reference_time}" >> ${EXPTDIR}/log.cycles
      fi
    else
-     echo "ERROR: No latest IMS SNOW file for update at ${YYYYMMDDHH}!!!!"
+     echo "ERROR: No latest IMS SNOW file for update at ${YYYYMMDDHHmm}!!!!"
    fi
 else
-   echo "NOTE: No update for IMS SNOW/ICE at ${YYYYMMDDHH}!"
+   echo "NOTE: No update for IMS SNOW/ICE at ${YYYYMMDDHHmm}!"
 fi
 #-----------------------------------------------------------------------
 #
@@ -465,13 +469,13 @@ EOF
 
      sst_reference_time=$(wgrib2 -t latest.SST) 
      if [ ${SAVE_CYCLE_LOG} == "TRUE" ] ; then
-       echo "${YYYYMMDDHH}(${cycle_type}): update SST using ${sst_reference_time}" >> ${EXPTDIR}/log.cycles
+       echo "${YYYYMMDDHHmm}(${cycle_type}): update SST using ${sst_reference_time}" >> ${EXPTDIR}/log.cycles
      fi
    else
-     echo "ERROR: No latest SST file for update at ${YYYYMMDDHH}!!!!"
+     echo "ERROR: No latest SST file for update at ${YYYYMMDDHHmm}!!!!"
    fi
 else
-   echo "NOTE: No update for SST at ${YYYYMMDDHH}!"
+   echo "NOTE: No update for SST at ${YYYYMMDDHHmm}!"
 fi
 
 #-----------------------------------------------------------------------
@@ -487,17 +491,17 @@ if [ ${SFC_CYC} -eq 1 ] || [ ${SFC_CYC} -eq 2 ] ; then  # cycle surface fields
       surface_file_dir_name=fcst_fv3lam
       bkpath_find="missing"
       restart_prefix_find="missing"
-      for ndayinhour in 00 24 48 72
+      for ndayinminutes in 00 1440 2880 4320
       do 
         if [ "${bkpath_find}" == "missing" ]; then
-          restart_prefix=$( date +%Y%m%d.%H0000. -d "${START_DATE} ${ndayinhour} hours ago" )
+          restart_prefix=$( date +%Y%m%d.%H%M00. -d "${START_DATE} ${ndayinminutes} minutes ago" )
 
-          offset_hours=$(( ${DA_CYCLE_INTERV} + ${ndayinhour} ))
-          YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${offset_hours} hours ago" )
+          offset_minutes=$(( ${DA_CYCLE_INTERV} + ${ndayinminutes} ))
+          YYYYMMDDHHmInterv=$( date +%Y%m%d%H%M -d "${START_DATE} ${offset_minutes} minutes ago" )
           bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${surface_file_dir_name}/RESTART  
 
           n=${DA_CYCLE_INTERV}
-          while [[ $n -le 6 ]] ; do
+          while [[ $n -le 360 ]] ; do
              if [ "${IO_LAYOUT_Y}" == "1" ]; then
                checkfile=${bkpath}/${restart_prefix}sfc_data.nc
              else
@@ -510,8 +514,8 @@ if [ ${SFC_CYC} -eq 1 ] || [ ${SFC_CYC} -eq 2 ] ; then  # cycle surface fields
              fi
  
              n=$((n + ${DA_CYCLE_INTERV}))
-             offset_hours=$(( ${n} + ${ndayinhour} ))
-             YYYYMMDDHHmInterv=$( date +%Y%m%d%H -d "${START_DATE} ${offset_hours} hours ago" )
+             offset_minutes=$(( ${n} + ${ndayinminutes} ))
+             YYYYMMDDHHmInterv=$( date +%Y%m%d%H%M -d "${START_DATE} ${offset_minutes} minutes ago" )
              bkpath=${fg_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/${surface_file_dir_name}/RESTART  # cycling, use background from RESTART
              print_info_msg "$VERBOSE" "Trying this path: ${bkpath}"
           done
@@ -575,7 +579,7 @@ if [ ${SFC_CYC} -eq 1 ] || [ ${SFC_CYC} -eq 2 ] ; then  # cycle surface fields
           fi
           echo "cycle surface with ${checkfile}" > cycle_surface.done
           if [ ${SAVE_CYCLE_LOG} == "TRUE" ] ; then
-            echo "${YYYYMMDDHH}(${cycle_type}): cycle surface with ${checkfile} " >> ${EXPTDIR}/log.cycles
+            echo "${YYYYMMDDHHmm}(${cycle_type}): cycle surface with ${checkfile} " >> ${EXPTDIR}/log.cycles
           fi
         else
           print_info_msg "Warning: cannot find surface from previous cycle"
@@ -620,7 +624,7 @@ if [ ${HH} -eq ${GVF_update_hour} ] && [ ${cycle_type} == "spinup" ]; then
       fi
 
       if [ ${SAVE_CYCLE_LOG} == "TRUE" ] ; then
-         echo "${YYYYMMDDHH}(${cycle_type}): update GVF with ${latestGVF} " >> ${EXPTDIR}/log.cycles
+         echo "${YYYYMMDDHHmm}(${cycle_type}): update GVF with ${latestGVF} " >> ${EXPTDIR}/log.cycles
       fi
    fi
 fi
@@ -637,7 +641,7 @@ fi
 if [[ "${NET}" = "RTMA"* ]]; then
     #find a bdry file, make sure it exists and was written out completely.
     for i in $(seq 0 24); do #track back up to 24 cycles to find bdry files
-      lbcDIR="${lbcs_root}/$(date -d "${START_DATE} ${i} hours ago" +"%Y%m%d%H")/lbcs"
+      lbcDIR="${lbcs_root}/$(date -d "${START_DATE} ${i} hours ago" +"%Y%m%d%H%M")/lbcs"
       if [[  -f ${lbcDIR}/gfs_bndy.tile7.001.nc ]]; then
         age=$(( $(date +%s) - $(date -r ${lbcDIR}/gfs_bndy.tile7.001.nc +%s) ))
         [[ age -gt 300 ]] && break
@@ -647,24 +651,45 @@ if [[ "${NET}" = "RTMA"* ]]; then
     ln_vrfy -snf ${lbcDIR}/gfs_bndy.tile7.001.nc .
 
 else
-  num_fhrs=( "${#FCST_LEN_HRS_CYCLES[@]}" )
-  ihh=$( expr ${HH} + 0 )
-  if [ ${num_fhrs} -gt ${ihh} ]; then
-     FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS_CYCLES[${ihh}]}
+
+  # Round all minutes to the next hour up to get this right
+  if [ ! -z "${CYCLE_LEN_MINS}" ]; then
+     ((rem = CYCLE_LEN_MINS % 60))
+     if [ ${rem} -gt 0 ]; then
+        ((FCST_LEN_HRS_thiscycle = CYCLE_LEN_MINS / 60 + 1))
+     else
+        ((FCST_LEN_HRS_thiscycle = CYCLE_LEN_MINS / 60))
+     fi
   else
+     num_fhrs=( "${#FCST_LEN_HRS_CYCLES[@]}" )
+     ihh=`expr ${HH} + 0`
+     if [ ${num_fhrs} -gt ${ihh} ]; then
+        temp=${FCST_LEN_HRS_CYCLES[${ihh}]}
+        FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS_CYCLES[${ihh}]}
+     else
+        FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS}
+     fi
+  fi
+
+  if [ ${cycle_type} == "spinup" ]; then
+     ((rem = FCST_LEN_SPINUP % 60))
+     if [ ${rem} -gt 0 ]; then
+        ((FCST_LEN_HRS_thiscycle = FCST_LEN_SPINUP / 60 + 1))
+     else
+        ((FCST_LEN_HRS_thiscycle = FCST_LEN_SPINUP / 60))
+     fi
+  fi 
+  if [ ${cycle_type} == "free" ]; then
      FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS}
   fi
-  if [ ${cycle_type} == "spinup" ]; then
-     FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS_SPINUP}
-  fi 
   print_info_msg "$VERBOSE" " The forecast length for cycle (\"${HH}\") is
-                 ( \"${FCST_LEN_HRS_thiscycle}\") "
+                 ( \"${FCST_LEN_HRS_thiscycle}\") hours"
 
 #   let us figure out which boundary file is available
   bndy_prefix=gfs_bndy.tile7
   n=${EXTRN_MDL_LBCS_SEARCH_OFFSET_HRS}
   end_search_hr=$(( 12 + ${EXTRN_MDL_LBCS_SEARCH_OFFSET_HRS} ))
-  YYYYMMDDHHmInterv=$(date +%Y%m%d%H -d "${START_DATE} ${n} hours ago")
+  YYYYMMDDHHmInterv=$(date +%Y%m%d%H%M -d "${START_DATE} ${n} hours ago")
   lbcs_path=${lbcs_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/lbcs
   while [[ $n -le ${end_search_hr} ]] ; do
     last_bdy_time=$(( n + ${FCST_LEN_HRS_thiscycle} ))
@@ -675,7 +700,7 @@ else
       break
     else
       n=$((n + 1))
-      YYYYMMDDHHmInterv=$(date +%Y%m%d%H -d "${START_DATE} ${n} hours ago")
+      YYYYMMDDHHmInterv=$(date +%Y%m%d%H%M -d "${START_DATE} ${n} hours ago")
       lbcs_path=${lbcs_root}/${YYYYMMDDHHmInterv}${SLASH_ENSMEM_SUBDIR}/lbcs
     fi
   done
@@ -716,7 +741,7 @@ fi
 #
 #-----------------------------------------------------------------------
 # 
-if [ ${YYYYMMDDHH} -eq 9999999999 ] ; then
+if [ ${YYYYMMDDHHmm} -eq 999999999999 ] ; then
 #if [ ${HH} -eq 06 ] || [ ${HH} -eq 18 ]; then
 if [ ${cycle_type} == "spinup" ]; then
    raphrrr_com=/mnt/lfs4/BMC/rtwbl/mhu/wcoss/nco/com/
@@ -757,7 +782,7 @@ EOF
      fi
 
      if [ ${SAVE_CYCLE_LOG} == "TRUE" ] ; then
-       echo "${YYYYMMDDHH}(${cycle_type}): run surface surgery" >> ${EXPTDIR}/log.cycles
+       echo "${YYYYMMDDHHmm}(${cycle_type}): run surface surgery" >> ${EXPTDIR}/log.cycles
      fi
    else
      print_info_msg "\

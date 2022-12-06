@@ -1405,7 +1405,7 @@ if [ "${RUN_ENVIR}" = "nco" ]; then
   ENSCTRL_NWGES_BASEDIR="${ENSCTRL_NWGES}/$envir/$NET"
   RRFSE_NWGES_BASEDIR="${RRFSE_NWGES}/$envir/$NET"
 
-  LOGDIR="${COMROOT}/logs/${NET}/${RUN}.@Y@m@d/@H"
+ # LOGDIR="${COMROOT}/logs/${NET}/${RUN}.@Y@m@d/@H"
 
 else
 
@@ -2262,6 +2262,8 @@ fi
 #
 #-----------------------------------------------------------------------
 #
+echo "LAYOUT_X="${LAYOUT_X}
+echo "LAYOUT_Y="${LAYOUT_Y}
 PE_MEMBER01=$(( LAYOUT_X*LAYOUT_Y ))
 if [ "$QUILTING" = "TRUE" ]; then
   PE_MEMBER01=$(( ${PE_MEMBER01} + ${WRTCMP_write_groups}*${WRTCMP_write_tasks_per_group} ))

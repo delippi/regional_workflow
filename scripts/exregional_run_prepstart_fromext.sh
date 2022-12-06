@@ -248,7 +248,7 @@ else
      FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS}
   fi
   if [ ${cycle_type} == "spinup" ]; then
-     FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS_SPINUP}
+     (( FCST_LEN_HRS_thiscycle = FCST_LEN_SPINUP / 60) )
   fi 
   print_info_msg "$VERBOSE" " The forecast length for cycle (\"${HH}\") is
                  ( \"${FCST_LEN_HRS_thiscycle}\") "

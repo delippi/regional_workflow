@@ -95,6 +95,10 @@ run directory (run_dir):
   mm=${cdate:4:2}
   dd=${cdate:6:2}
   hh=${cdate:8:2}
+  min=${cdate:10:2}
+  if [ ${#cdate} -lt 12 ]; then
+    min=00
+  fi
 #
 # Set parameters in the model configure file.
 #
@@ -104,20 +108,30 @@ run directory (run_dir):
 # decide the forecast length for this cycle
 #
 
-  num_fhrs=( "${#FCST_LEN_HRS_CYCLES[@]}" )
-  ihh=`expr ${hh} + 0`
-  if [ ${num_fhrs} -gt ${ihh} ]; then
-     FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS_CYCLES[${ihh}]}
+  if [ ! -z "${CYCLE_LEN_MINS}" ]; then
+     FCST_LEN_thiscycle=${CYCLE_LEN_MINS}
   else
-     FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS}
+     num_fhrs=( "${#FCST_LEN_HRS_CYCLES[@]}" )
+     ihh=`expr ${hh} + 0`
+     if [ ${num_fhrs} -gt ${ihh} ]; then
+        temp=${FCST_LEN_HRS_CYCLES[${ihh}]}
+        (( FCST_LEN_thiscycle = 60*temp ))
+     else
+        (( FCST_LEN_thiscycle = 60*FCST_LEN_HRS ))
+     fi
   fi
   print_info_msg "$VERBOSE" " The forecast length for cycle (\"${hh}\") is
-                 ( \"${FCST_LEN_HRS_thiscycle}\") "
+                 ( \"${FCST_LEN_thiscycle}\") minutes"
 
   if [ ${cycle_type} == "spinup" ]; then
-    FCST_LEN_HRS_thiscycle=${FCST_LEN_HRS_SPINUP}
+    FCST_LEN_thiscycle=${FCST_LEN_SPINUP}
+  fi
+  if [ ${cycle_type} == "free" ]; then
+    ((FCST_LEN_thiscycle = 60*FCST_LEN_HRS))
   fi
 
+  temp=`echo "${FCST_LEN_thiscycle}/60" | bc -l`
+  FCST_LEN_thiscycle=`printf "%4.2f" $temp`
 #
 #-----------------------------------------------------------------------
 #
@@ -133,7 +147,8 @@ run directory (run_dir):
   'start_month': $mm
   'start_day': $dd
   'start_hour': $hh
-  'nhours_fcst': ${FCST_LEN_HRS_thiscycle}
+  'start_minute': $min
+  'nhours_fcst': ${FCST_LEN_thiscycle}
   'dt_atmos': ${DT_ATMOS}
   'atmos_nthreads': ${nthreads:-1}
   'ncores_per_node': ${NCORES_PER_NODE}

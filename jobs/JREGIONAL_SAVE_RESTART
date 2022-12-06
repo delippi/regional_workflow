@@ -82,7 +82,7 @@ fi
 #
 #-----------------------------------------------------------------------
 #
-# Make sure that fhr is a non-empty string consisting of only digits.  
+# Make sure that fhr and fmin are non-empty strings consisting of only digits.  
 #
 #-----------------------------------------------------------------------
 #
@@ -93,6 +93,14 @@ The forecast hour (fhr) must be a non-empty string consisting of only
 digits:
   fhr = \"${fhr}\""
 fi
+fmin=$( printf "%s" "${fmin}" | sed -n -r -e "s/^([0-9]+)$/\1/p" )
+if [ -z "$fmin" ]; then
+  print_err_msg_exit "\
+The forecast hour (fmin) must be a non-empty string consisting of only
+digits:
+  fmin = \"${fmin}\""
+fi
+
 #
 #-----------------------------------------------------------------------
 #
@@ -106,6 +114,7 @@ $SCRIPTSDIR/exregional_save_restart.sh \
   run_dir="${run_dir}" \
   nwges_dir="${nwges_dir}" \
   fhr="${fhr}" \
+  fmin="${fmin}" \
   cycle_type="${CYCLE_TYPE}" || \
 print_err_msg_exit "\
 Call to ex-script corresponding to J-job \"${scrfunc_fn}\" failed."

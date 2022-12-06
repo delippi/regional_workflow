@@ -177,19 +177,20 @@ cyc=$hh
 #
 #-----------------------------------------------------------------------
 #
-dyn_file="${run_dir}/dynf${fhr}.nc"
-phy_file="${run_dir}/phyf${fhr}.nc"
-
 len_fhr=${#fhr}
-if [ ${len_fhr} -eq 9 ]; then
+if [ ${len_fhr} -eq 5 ]; then
   post_fhr=${fhr:0:3}
-  post_min=${fhr:4:2}
+  post_min=${fhr:3:2}
   if [ ${post_min} -lt 15 ]; then # should use $nsout_min instead of 15
     post_min=00
   fi
+  dyn_file="${run_dir}/dynf${post_fhr}-${post_min}-00.nc"
+  phy_file="${run_dir}/phyf${post_fhr}-${post_min}-00.nc"
 else
   post_fhr=${fhr}
   post_min=00
+  dyn_file="${run_dir}/dynf${post_fhr}.nc"
+  phy_file="${run_dir}/phyf${post_fhr}.nc"
 fi
 
 post_time=$( date --utc --date "${yyyymmdd} ${hh} UTC + ${post_fhr} hours" "+%Y%m%d%H" )
@@ -316,18 +317,18 @@ elif [ ${len_fhr} -eq 3 ]; then
   else
     post_fhr=${fhr}
   fi
-elif [ ${len_fhr} -eq 9 ]; then
+elif [ ${len_fhr} -eq 5 ]; then
   if [ "${fhr:0:1}" = "0" ]; then
     if [ ${post_min} -eq 00 ]; then
       post_fhr="${fhr:1:2}"
-      subh_fhr="${fhr:0:3}"
+      subh_fhr="${fhr:0:3}00"
     else
-      post_fhr="${fhr:1:2}.${fhr:4:2}"
+      post_fhr="${fhr:1:2}.${fhr:3:2}"
     fi
   else
     if [ ${post_min} -eq 00 ]; then
       post_fhr="${fhr:0:3}"
-      subh_fhr="${fhr:0:3}"
+      subh_fhr="${fhr:0:3}00"
     else
       post_fhr="${fhr:0:3}.${fhr:4:2}"
     fi
@@ -337,7 +338,6 @@ else
 The \${fhr} variable contains too few or too many characters:
   fhr = \"$fhr\""
 fi
-
 
 bgdawp=${postprd_dir}/${NET}.t${cyc}z.bgdawpf${subh_fhr}.${tmmark}.grib2
 bgrd3d=${postprd_dir}/${NET}.t${cyc}z.bgrd3df${subh_fhr}.${tmmark}.grib2

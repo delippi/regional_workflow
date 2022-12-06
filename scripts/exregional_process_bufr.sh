@@ -132,7 +132,7 @@ esac
 #-----------------------------------------------------------------------
 #
 set -x
-START_DATE=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
+START_DATE="${CDATE:0:8} ${CDATE:8:4}"
 YYYYMMDDHH=$(date +%Y%m%d%H -d "${START_DATE}")
 JJJ=$(date +%j -d "${START_DATE}")
 
@@ -140,6 +140,7 @@ YYYY=${YYYYMMDDHH:0:4}
 MM=${YYYYMMDDHH:4:2}
 DD=${YYYYMMDDHH:6:2}
 HH=${YYYYMMDDHH:8:2}
+mm=${START_DATE: -2:2}
 YYYYMMDD=${YYYYMMDDHH:0:8}
 
 YYJJJHH=$(date +"%y%j%H" -d "${START_DATE}")
@@ -190,11 +191,16 @@ if [[ "${NET}" = "RTMA"* ]]; then
   obspath_tmp=${OBSPATH}/${obs_source}.${YYYYMMDD}
 
 else
-  SUBH=""
-  obs_source=rap
-  if [[ ${HH} -eq '00' || ${HH} -eq '12' ]]; then
-    obs_source=rap_e
+  if [ ${mm} -eq 00 ]; then
+    SUBH=""
+    obs_source=rap
+  else
+    SUBH=${mm}
+    obs_source=rtma_ru
   fi
+#  if [[ ${HH} -eq '00' || ${HH} -eq '12' ]]; then
+#    obs_source=rap_e
+#  fi
 
   case $MACHINE in
 
@@ -247,7 +253,7 @@ fi
 cat << EOF > namelist.lightning
  &setup
   analysis_time = ${YYYYMMDDHH},
-  minute=00,
+  minute=${mm},
   trange_start=-10,
   trange_end=10,
   grid_type = "${PREDEF_GRID_NAME}",
@@ -379,7 +385,11 @@ fi
 #
 #-----------------------------------------------------------------------
 
-obs_file=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.prepbufr.tm00 
+if [ ${SUBH} == "00" ]; then
+   obs_file=${obspath_tmp}/${obsfileprefix}.t${HH}${SUBH}z.prepbufr.tm00 
+else
+   obs_file=${obspath_tmp}/${obsfileprefix}.t${HH}z.prepbufr.tm00
+fi
 print_info_msg "$VERBOSE" "obsfile is $obs_file"
 run_metar=false
 if [ -r "${obs_file}" ]; then
@@ -403,6 +413,7 @@ fi
 cat << EOF > namelist.metarcld
  &setup
   analysis_time = ${YYYYMMDDHH},
+  analysis_minute = ${mm},
   prepbufrfile='prepbufr',
   twindin=0.5,
   metar_impact_radius=$metar_impact_radius_number,

@@ -488,19 +488,25 @@ WFLOW_LAUNCH_LOG_FN="log.launch_FV3LAM_wflow"
 # FCST_LEN_HRS:
 # The length of each forecast, in integer hours.
 #
-# FCST_LEN_HRS_SPINUP:
-# The length of each forecast in spin up cycles, in integer hours.
+# FCST_LEN_SPINUP:
+# The length of each forecast in spin-up cycles, in integer minutes.
 #
 # FCST_LEN_HRS_CYCLES:
 # The length of forecast for each cycle, in integer hours.
 # When it empty, all forecast will be FCST_LEN_HRS
 #
+# FCST_LEN_MINS_CYCLES:
+# The length of forecast for each cycle, in integer minutes.
+# If equal to 0 or 00, then FCST_LEN_HRS_SPINUP is used instead. Otherwise,
+# this value supercedes the value of FCST_LEN_HRS_CYCLES.
+# When it empty, all forecast will be FCST_LEN_HRS
+#
 # DA_CYCLE_INTERV:
-# Data assimilation cycle interval, in integer hours for now.
+# Data assimilation cycle interval, in integer minutes.
 #
 # RESTART_INTERVAL:
 # Set up frequenency or list of the forecast hours that FV3 should
-# generate the restart files.
+# generate the restart files (can be a decimal value).
 #
 # POSTPROC_LEN_HRS:
 # The length of post process, in integer hours.
@@ -523,9 +529,10 @@ BOUNDARY_LONG_LEN_HRS="0"
 POSTPROC_LEN_HRS="1"
 POSTPROC_LONG_LEN_HRS="1"
 FCST_LEN_HRS="24"
-FCST_LEN_HRS_SPINUP="1"
+FCST_LEN_SPINUP="1"
 FCST_LEN_HRS_CYCLES=( )
-DA_CYCLE_INTERV="3"
+FCST_LEN_MINS_CYCLES=( )
+DA_CYCLE_INTERV="180"
 RESTART_INTERVAL="3,6"
 CYCL_HRS_HYB_FV3LAM_ENS=( "99" )
 

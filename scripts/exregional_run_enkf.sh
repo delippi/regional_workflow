@@ -134,10 +134,6 @@ esac
 #
 #-----------------------------------------------------------------------
 #
-START_DATE=$(echo "${CDATE}" | sed 's/\([[:digit:]]\{2\}\)$/ \1/')
-
-YYYYMMDDHH=$(date +%Y%m%d%H -d "${START_DATE}")
-
 vlddate=$CDATE
 l_fv3reg_filecombined=.false.
 #

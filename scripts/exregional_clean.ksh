@@ -119,4 +119,35 @@ for onetime in ${XX[*]};do
   fi
 done
 
+#-----------------------------------------------------------------------
+# Delete PET*.ESMF_LogFile files in model run directories
+#-----------------------------------------------------------------------
+deletetime=$(date +%Y%m%d%H -d "${currentime} ${CLEAN_RUN_PET_HRS} hours ago")
+echo "Deleting fcst_fv3lam/PET* files before ${deletetime}..."
+cd ${CYCLE_BASEDIR}/${currentime}
+set -A XX $(ls -R mem*/fcst_fv3lam/PET* | sort -r)
+for onetime in ${XX[*]};do
+  if [[ ${onetime} =~ ^[0-9]+$ ]] && [[ ${onetime} -le ${deletetime} ]]; then
+    rm -rf ${onetime}
+    echo "Deleted ${onetime}"
+  fi
+done
+
+#-----------------------------------------------------------------------
+# Delete pe* and other support file links in GSI directories
+#-----------------------------------------------------------------------
+deletetime=$(date +%Y%m%d%H -d "${currentime} ${CLEAN_GSI_SUPPORT_FILE_HRS} hours ago")
+echo "Deleting GSI links/support files before ${deletetime}..."
+cd ${CYCLE_BASEDIR}/${currentime}
+prefixes=(abi ahi airs ams avhrr3 cris fv3SAR*ens* fv3_* hirs iasi imgr mhs pe????. seviri sndrD ssmi)
+for pfx in ${prefixes[@]}; do
+  set -A XX $(ls -R mem*/observer_gsi/${pfx}* | sort -r)
+  for onetime in ${XX[*]};do
+    if [[ ${onetime} =~ ^[0-9]+$ ]] && [[ ${onetime} -le ${deletetime} ]]; then
+      rm -rf ${onetime}
+      echo "Deleted ${onetime}"
+    fi
+  done
+done
+
 exit 0
