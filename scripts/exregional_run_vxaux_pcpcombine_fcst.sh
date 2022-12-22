@@ -118,6 +118,7 @@ set_vx_params \
 #
 #-----------------------------------------------------------------------
 #
+MEM_INDX_OR_NULL=$((10#${MEM_INDX_OR_NULL}))
 time_lag=$(( (${MEM_INDX_OR_NULL:+${ENS_TIME_LAG_HRS[${MEM_INDX_OR_NULL}-1]}}+0)*${secs_per_hour} ))
 #
 #-----------------------------------------------------------------------
@@ -232,6 +233,26 @@ export FIELDNAME_IN_MET_FILEDIR_NAMES
 
 export FCST_REL_PATH_TEMPLATE
 export FCST_REL_PATH_METPROC_TEMPLATE
+#
+#-----------------------------------------------------------------------
+#
+# Need to add in variable for handling HREF data: IN_ACCUM
+# Default will be 01, unless it is mem05/mem10, then it will be 03.
+# Note: This is specifically hard-coded to this application.
+#
+#-----------------------------------------------------------------------
+#
+if [[ ${NET} == "HREF" ]]; then 
+  if [[ ${USCORE_ENSMEM_NAME_OR_NULL} == "_mem05" || ${USCORE_ENSMEM_NAME_OR_NULL} == "_mem10" ]]; then
+    IN_ACCUM="03"
+  else
+    IN_ACCUM="01"
+  fi
+else
+  IN_ACCUM="01"
+fi
+
+export IN_ACCUM
 #
 #-----------------------------------------------------------------------
 #

@@ -134,7 +134,7 @@ for (( i=0; i<${NUM_ENS_MEMBERS}; i++ )); do
   mem_indx_fmt=$(printf "%0${NDIGITS_ENSMEM_NAMES}d" "${mem_indx}")
   time_lag=$(( ${ENS_TIME_LAG_HRS[$i]}*${secs_per_hour} ))
 
-  SLASH_ENSMEM_SUBDIR_OR_NULL="/mem${mem_indx}"
+  SLASH_ENSMEM_SUBDIR_OR_NULL="/mem${mem_indx_fmt}"
   template="${FCST_SUBDIR_TEMPLATE}/${FCST_FN_TEMPLATE}"
   if [ -z "${FCST_REL_PATH_TEMPLATE}" ]; then
     FCST_REL_PATH_TEMPLATE="  $(eval echo ${template})"

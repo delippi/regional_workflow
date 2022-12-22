@@ -187,7 +187,7 @@ for (( i=0; i<${NUM_ENS_MEMBERS}; i++ )); do
   mem_indx_fmt=$(printf "%0${NDIGITS_ENSMEM_NAMES}d" "${mem_indx}")
   time_lag=$(( ${ENS_TIME_LAG_HRS[$i]}*${secs_per_hour} ))
 
-  SLASH_ENSMEM_SUBDIR_OR_NULL="/mem${mem_indx}"
+  SLASH_ENSMEM_SUBDIR_OR_NULL="/mem${mem_indx_fmt}"
   if [ "${field_is_APCPgt01h}" = "TRUE" ]; then
     template="${FCST_SUBDIR_METPROC_TEMPLATE}/${FCST_FN_METPROC_TEMPLATE}"
   else
