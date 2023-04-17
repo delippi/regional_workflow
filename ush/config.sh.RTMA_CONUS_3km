@@ -102,7 +102,7 @@ readin_localization=.true.     #if true, it overwrites the "beta1_inv/ens_h/ens_
 beta1_inv=0.5                  #beata_inv is 1-ensemble_wgt
 ens_h=20                       #110
 ens_v=1                        #3
-regional_ensemble_option=5     #1 for GDAS, 5 for RRFSDAS
+regional_ensemble_option=1     #1 for GDAS, 5 for RRFSDAS
 grid_ratio_fv3=2.0             #fv3 resolution 3km, so analysis=3*2=6km
 grid_ratio_ens=3               #analysis 6km, so ensemble=6*3=18km. GDAS ensemble is 20km
 ##MEMO1: regional_ensemble_option=5 will be changed to 1 if there are not enough RRFS ensembles at the runtime.
@@ -129,7 +129,7 @@ SFCOBS_USELIST="/lfs4/BMC/amb-verif/rap_ops_mesonet_uselists"
 
 LBC_SPEC_INTVL_HRS="1"
 
-DATE_FIRST_CYCL="20230406"
+DATE_FIRST_CYCL="20230416"
 DATE_LAST_CYCL="20230831"
 CYCL_HRS=( "00" "12" )
 CYCL_HRS_SPINSTART=("03" "15")
@@ -151,7 +151,7 @@ PREEXISTING_DIR_METHOD="upgrade"
 #BOUNDARY_CYCLEDEF="${DATE_FIRST_CYCL}0000 ${DATE_LAST_CYCL}2300 06:00:00"
 PROD_CYCLEDEF="${DATE_FIRST_CYCL}0000 ${DATE_LAST_CYCL}2300 01:00:00"
 #PRODLONG_CYCLEDEF="${DATE_FIRST_CYCL}0000 ${DATE_LAST_CYCL}2300 12:00:00"
-ARCHIVE_CYCLEDEF=$PROD_CYCLEDEF
+ARCHIVE_CYCLEDEF="$PROD_CYCLEDEF"
 if [[ $DO_SPINUP == "TRUE" ]] ; then
   SPINUP_CYCLEDEF="00 03-08,15-20 ${CYCLEDAY} ${CYCLEMONTH} ${STARTYEAR} *"
 fi
@@ -178,7 +178,6 @@ DT_ATMOS=1
 NCORES_RUN_ANAL=240
 IO_LAYOUT_Y=1
 PPN_RUN_NONVARCLDANL=${IO_LAYOUT_Y}
-regional_ensemble_option=1
 
 MAXTRIES_RUN_PREPSTART="3"
 MAXTRIES_RUN_FCST="3"
