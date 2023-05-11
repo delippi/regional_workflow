@@ -2054,6 +2054,17 @@ TILE_SETS="full"
 # 'DO_ENS_RADDA="TRUE"', the radiance DA must be true, i.e., 'DO_RADDA="TRUE"'.  This 
 # is because the radiance DA in EnKF relies the radiance procedures in the GSI-observer, 
 # which is mainly controled by DO_RADDA.
+#
+# DO_BLENDING:
+# Flag to perform large scale blending during initialization. If this is set to
+# "TRUE", then the RRFS EnKF will be blended with the external model ICS using
+# the Raymond filter (a low-pass, sixth-order implicit tangent filter).
+# Right now the external model ICS must be GDAS EnKF.
+# References:
+#   Schwartz, C. S., J. Poterjoy, J. R. Carley, D. C. Dowell, G. S. Romine, and K. Ide, 2022:
+#       Comparing Partial and Continuously Cycling Ensemble Kalman Filter Data Assimilation
+#       Systems for Convection-Allowing Ensemble Forecast Initialization. Weather and Forecasting,
+#       37, 85-111, https://doi.org/10.1175/Waf-D-21-0069.1.
 #-----------------------------------------------------------------------
 #
 DO_ENSEMBLE="FALSE"
@@ -2072,6 +2083,7 @@ DO_ENSPOST="FALSE"
 DO_ENSINIT="FALSE"
 DO_SAVE_DA_OUTPUT="FALSE"
 DO_ENS_RADDA="FALSE"
+DO_BLENDING="FALSE"
 #
 #-----------------------------------------------------------------------
 #

@@ -680,6 +680,49 @@ located in the following directory:
 #
 #-----------------------------------------------------------------------
 #
+# Run large scale blending
+#
+#-----------------------------------------------------------------------
+# NOTES:
+# * Currently only blending: u, v, t, dpres, and sphum
+#     -) Make a copy of out.atm.tile7.nc (global file) since it will be overwritten.
+#     -) out.sfc.tile7.nc is not used
+#     -) Blending only works with GDASENKF (netcdf)
+# * Two RRFS EnKF member files are needed: fv_core and fv_tracer.
+#     -) fv_core contains u, v, t, and dpres
+#     -) fv_tracer contains sphum
+#     -) The yyyymmdd.180000.* restart files are located in
+#        yyyymdd17/mem00??/fcst_fv3lam/RESTART, so need to compute the
+#        current date minus 1 hour.
+#     -) The RRFS EnKF members can be linked because they are not overwritten.
+# * The RRFS EnKF member files are warm starts while the GDAS EnKF after chgres
+#   are cold starts so there will need to be some additional grid staggering
+#   transformation prior to blending. But not sure how. The cold start file has
+#   u_w, v_w, u_s, and v_s which possibly correspond to the C-/D-grid staggering.
+# * Question(s):
+#     1) do I only need to update u_s/v_w or all 4?
+#     2) should I run chgres on the RRFS EnKF member to get in cold start form?
+#     3) should global_hyblev_fcst_rrfsL65.txt have 0.000 0.0000000 as the 66th row?
+#        a) for now, just chop off the 66th row and blend the top 65 layers in the py scripts
+#
+# /lfs/h2/emc/stmp/donald.e.lippi/rrfs/June2022_retro/Ens_blending/v0.4.0/ensda/2022072018/mem0001/ics/tmp_ICS
+#
+cdate_crnt_fhr_m1=$( date --utc --date "$yyyymmdd $hh UTC - 1 hours" "+%Y%m%d%H" )
+if [[ $cdate_crnt_fhr_m1 -ge ${DATE_FIRST_CYCL}${STARTHOUR} ]]; then
+if [[ $DO_BLENDING == "TRUE" && $EXTRN_MDL_NAME_ICS == "GDASENKF" ]]; then
+   date
+   cp_vrfy $SCRIPTSDIR/da_blending_fv3.py .  # copy the blending script
+   ln_vrfy -sf $EXECDIR/raymond.cpython-38-x86_64-linux-gnu.so .  # link raymond f2py module
+   cp_vrfy out.atm.tile${TILE_RGNL}.nc out.atm.tile${TILE_RGNL}_unblended.nc
+   ln_vrfy -sf ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.fv_core.res.tile1.nc .
+   ln_vrfy -sf ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.fv_tracer.res.tile1.nc .
+   python ./da_blending_fv3.py ./out.atm.tile${TILE_RGNL}.nc ./${yyyymmdd}.${hh}0000.fv_core.res.tile1.nc ./${yyyymmdd}.${hh}0000.fv_tracer.res.tile1.nc
+   date
+fi
+fi
+#
+#-----------------------------------------------------------------------
+#
 # Move initial condition, surface, control, and 0-th hour lateral bound-
 # ary files to ICs_BCs directory.
 #
