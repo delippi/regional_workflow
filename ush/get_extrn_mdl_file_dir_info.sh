@@ -419,6 +419,9 @@ fi
       elif [ "${MACHINE}" = "JET" ] ; then
         fns_on_disk=( "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.atmf0${fcst_hh}.${GDAS_MEM_NAME}.nc" "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.sfcf0${fcst_hh}.${GDAS_MEM_NAME}.nc")  # use netcdf
         fns_in_arcv=( "gdas.t${hh}z.atmf0${fcst_hh}.nc" "gdas.t${hh}z.sfcf0${fcst_hh}.nc")  # use netcdf
+      elif [ "${MACHINE}" = "WCOSS2" ] ; then
+        fns_on_disk=( "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.atmf0${fcst_hh}.${GDAS_MEM_NAME}.nc" "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.sfcf0${fcst_hh}.${GDAS_MEM_NAME}.nc")  # use netcdf
+        fns_in_arcv=( "gdas.t${hh}z.atmf0${fcst_hh}.nc" "gdas.t${hh}z.sfcf0${fcst_hh}.nc")  # use netcdf
       elif [ "${MACHINE}" = "ORION" ] ; then
         fns_on_disk=( "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.atmf0${fcst_hh}.${GDAS_MEM_NAME}.nc" "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.sfcf0${fcst_hh}.${GDAS_MEM_NAME}.nc")  # use netcdf
         fns_in_arcv=( "gdas.t${hh}z.atmf0${fcst_hh}.nc" "gdas.t${hh}z.sfcf0${fcst_hh}.nc")  # use netcdf
@@ -429,10 +432,10 @@ fi
       fcst_hh=( $( printf "%02d " "${time_offset_hrs}" ) )
       prefix="${yy}${ddd}${hh}${mn}${fcst_mn}"
       prefix2=""
-      if [ "${MACHINE}" = "WCOSS2" ] ; then
-        prefix="${varname_extrn_mdl_memhead}"".t${hh}z.pgrb2b.0p50.f0"
-        prefix2="${varname_extrn_mdl_memhead}"".t${hh}z.pgrb2a.0p50.f0"
-      fi
+      #if [ "${MACHINE}" = "WCOSS2" ] ; then
+      #  prefix="${varname_extrn_mdl_memhead}"".t${hh}z.pgrb2b.0p50.f0"
+      #  prefix2="${varname_extrn_mdl_memhead}"".t${hh}z.pgrb2a.0p50.f0"
+      #fi
       echo ${varname_extrn_mdl_memhead}
       fns_on_disk=( "${fcst_hh/#/$prefix}" )
       fns_on_disk2=( "${fcst_hh/#/$prefix2}" )
@@ -547,6 +550,9 @@ and analysis or forecast (anl_or_fcst):
       elif  [ "${MACHINE}" = "JET" ]; then
         fns_on_disk=( "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.atmf0${fcst_hh}.${GDAS_MEM_NAME}.nc" "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.sfcf0${fcst_hh}.${GDAS_MEM_NAME}.nc")  # use netcdf
         fns_in_arcv=( "gdas.t${hh}z.atmf${fcst_hhh}.nc" "gdas.t${hh}z.sfcf${fcst_hhh}.nc" )  #  for now.
+      elif  [ "${MACHINE}" = "WCOSS2" ]; then
+        fns_on_disk=( "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.atmf0${fcst_hh}.${GDAS_MEM_NAME}.nc" "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.sfcf0${fcst_hh}.${GDAS_MEM_NAME}.nc")  # use netcdf
+        fns_in_arcv=( "gdas.t${hh}z.atmf${fcst_hhh}.nc" "gdas.t${hh}z.sfcf${fcst_hhh}.nc" )  #  for now.
       elif  [ "${MACHINE}" = "ORION" ]; then
         fns_on_disk=( "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.atmf0${fcst_hh}.${GDAS_MEM_NAME}.nc" "${yy}${ddd}${hh}${mn}.gdas.t${hh}z.sfcf0${fcst_hh}.${GDAS_MEM_NAME}.nc")  # use netcdf
         fns_in_arcv=( "gdas.t${hh}z.atmf${fcst_hhh}.nc" "gdas.t${hh}z.sfcf${fcst_hhh}.nc" )  #  for now.
@@ -556,13 +562,10 @@ and analysis or forecast (anl_or_fcst):
     "GEFS")
       fcst_hh=( $( printf "%02d " "${lbc_spec_fhrs[@]}" ) )
       prefix="${yy}${ddd}${hh}${mn}${fcst_mn}"
-      prefix2=""
-      if [ "${MACHINE}" = "WCOSS2" ] ; then
-        prefix="${varname_extrn_mdl_memhead}"".t${hh}z.pgrb2b.0p50.f0"
-        prefix2="${varname_extrn_mdl_memhead}"".t${hh}z.pgrb2a.0p50.f0"
-      fi
+      #if [ "${MACHINE}" = "WCOSS2" ] ; then
+      #  prefix="${varname_extrn_mdl_memhead}"".t${hh}z.pgrb2b.0p50.f0"
+      #fi
       fns_on_disk=( "${fcst_hh[@]/#/$prefix}" )
-      fns_on_disk2=( "${fcst_hh[@]/#/$prefix2}" )
       fns_in_arcv=( "${fcst_hh[@]/#/$prefix}" )
       ;;
 
@@ -732,6 +735,9 @@ has not been specified for this external model and machine combination:
     "ORION")
        sysdir="$sysbasedir"
        ;;
+    "WCOSS2")
+       sysdir="$sysbasedir"
+       ;;
     *)
       print_err_msg_exit "\
 The system directory in which to look for external model output files 
@@ -751,8 +757,8 @@ has not been specified for this external model and machine combination:
        sysdir="$sysbasedir/${GEFS_INPUT_SUBDIR}"
        ;;
     "WCOSS2")
-      sysdir="$sysbasedir/gefs.${yyyymmdd}/${hh}/atmos/pgrb2bp5"
-      sysdir2="$sysbasedir/gefs.${yyyymmdd}/${hh}/atmos/pgrb2ap5"
+      sysdir="$sysbasedir/${GEFS_INPUT_SUBDIR}" #/gefs.${yyyymmdd}/${hh}/atmos/pgrb2bp5"
+      sysdir2="$sysbasedir/${GEFS_INPUT_SUBDIR}" #/gefs.${yyyymmdd}/${hh}/atmos/pgrb2ap5"
       ;;
     *)
       print_err_msg_exit "\

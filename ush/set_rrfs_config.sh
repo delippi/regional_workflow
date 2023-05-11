@@ -28,6 +28,7 @@ if [[ $MACHINE == "hera" ]] ; then
 fi
 
 # for real-time wcoss2 runs
+if [[ $DO_RETRO == "FALSE" ]] ; then
 if [[ $MACHINE == "wcoss2" ]] ; then
   EXTRN_MDL_SOURCE_BASEDIR_ICS=/lfs/h1/ops/prod/com/gfs/v16.3
   EXTRN_MDL_SOURCE_BASEDIR_LBCS=/lfs/h1/ops/prod/com/gfs/v16.3
@@ -40,6 +41,7 @@ if [[ $MACHINE == "wcoss2" ]] ; then
   FIRE_RAVE_DIR=/lfs/h2/emc/physics/noscrub/partha.bhattacharjee/RAVE_rawdata/RAVE_NA
   FVCOM_DIR="/lfs/h1/ops/prod/com/nosofs/v3.5"
   FVCOM_FILE="fvcom"
+fi
 fi
 
 # set up for retrospective test:
@@ -137,12 +139,15 @@ if [[ $DO_RETRO == "TRUE" ]] ; then
     RETRODATAPATH="/lfs/h2/emc/lam/noscrub/emc.lam/rrfs_retro_data"
     if [[ ${DO_ENSEMBLE} == "TRUE" ]]; then
       if [[ ${EXTRN_MDL_NAME_ICS} == "GDASENKF" ]]; then
-        EXTRN_MDL_SOURCE_BASEDIR_ICS="${RETRODATAPATH}/enkf/atm"
+        #EXTRN_MDL_SOURCE_BASEDIR_ICS="${RETRODATAPATH}/enkf/atm"
+        EXTRN_MDL_SOURCE_BASEDIR_ICS="/lfs/h2/emc/da/noscrub/donald.e.lippi/retro_data/enkf/atm"
       elif [[ ${EXTRN_MDL_NAME_ICS} == "FV3GFS" ]]; then
         EXTRN_MDL_SOURCE_BASEDIR_ICS="${RETRODATAPATH}/gfs/0p25deg/grib2"
       fi
       if [[ ${EXTRN_MDL_NAME_LBCS} == "GDASENKF" ]]; then
         EXTRN_MDL_SOURCE_BASEDIR_LBCS="${RETRODATAPATH}/enkf/atm"
+      elif [[ ${EXTRN_MDL_NAME_LBCS} == "GEFS" ]]; then
+        EXTRN_MDL_SOURCE_BASEDIR_LBCS="${RETRODATAPATH}/stage/GEFS/dsg"
       elif [[ ${EXTRN_MDL_NAME_LBCS} == "FV3GFS" ]]; then
         EXTRN_MDL_SOURCE_BASEDIR_LBCS="${RETRODATAPATH}/gfs/0p25deg/grib2"
       fi
@@ -151,7 +156,7 @@ if [[ $DO_RETRO == "TRUE" ]] ; then
       EXTRN_MDL_SOURCE_BASEDIR_LBCS=${RETRODATAPATH}/gfs
     fi
     OBSPATH=${RETRODATAPATH}/obs_rap
-    OBSPATH_NSSLMOSIAC=${RETRODATAPATH}/reflectivity
+    OBSPATH_NSSLMOSIAC=${RETRODATAPATH}/reflectivity/upperair/mrms/conus/MergedReflectivityQC
     LIGHTNING_ROOT=${RETRODATAPATH}/lightning
     ENKF_FCST=${RETRODATAPATH}/enkf/atm
     AIRCRAFT_REJECT="${RETRODATAPATH}/amdar_reject_lists"

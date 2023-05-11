@@ -471,8 +471,13 @@ else
   case $MACHINE in
 
   "WCOSS2")
-     obsfileprefix=${obs_source}
-     obspath_tmp=${OBSPATH}/${obs_source}.${YYYYMMDD}
+     if [[ ${DO_RETRO} == "TRUE" ]]; then
+       obsfileprefix=${YYYYMMDDHH}.${obs_source}
+       obspath_tmp=${OBSPATH}
+     else
+       obsfileprefix=${obs_source}
+       obspath_tmp=${OBSPATH}/${obs_source}.${YYYYMMDD}
+     fi
     ;;
   "JET" | "HERA")
      obsfileprefix=${YYYYMMDDHH}.${obs_source}
