@@ -1,22 +1,16 @@
-#import tictoc
-#tic = tictoc.tic()
 import numpy as np
 from netCDF4 import Dataset
 import raymond
 import sys
 
-model = "RRFS"
-host = "GDAS"
-Lx = 960.0
+Lx = float(sys.argv[1])  # BLENDING_LENGTHSCALE
 pi = np.pi
 nbdy = 40  # 20 on each side
 blend = True
 
-# Eventually, these two lists should be the same. There is still some technical work
-# to be done to make sure the chgres_cube output (coldstart) matches the same grid
-# staggering as the RRFS restart (warm start).
+# List of variables from the regional (fg) and global (bg) to blend respectively.
 vars_fg = ["u", "v", "T", "sphum", "delp"]
-vars_bg = ["u_s", "v_w", "t", "sphum", "delp"]
+vars_bg = ["u_cold2fv3", "v_cold2fv3", "t_cold2fv3", "sphum_cold2fv3", "delp_cold2fv3"]
 
 
 if blend:
@@ -25,35 +19,32 @@ if blend:
     # GDAS EnKF file chgres_cube-ed from gaussian grid to ESG grid.
     # There is one more step to make sure the winds are on the same
     # grid staggering and have the same orientation as the RRFS winds.
-    glb_fg = str(sys.argv[0])
-    glb_fg_nc = Dataset(glb_fg, mode="a")
+    glb_fg = str(sys.argv[2])
+    glb_fg_nc = Dataset(glb_fg)
     glb_nlon = glb_fg_nc.dimensions["lon"].size  # 1820   (lonp=1821)
     glb_nlat = glb_fg_nc.dimensions["lat"].size  # 1092   (latp=1093)
-    glb_nlev = glb_fg_nc.dimensions["lev"].size  # 65     (levp=66)
+    glb_nlev = glb_fg_nc.dimensions["lev"].size  # 66     (levp=67)
     glb_Dx = 3.0
 
     # RRFS EnKF restart file fv_core.res.tile1 on ESG grid.
-    reg_fg = str(sys.argv[1])
+    reg_fg = str(sys.argv[3])
     # Open the blended file for updating the required vars (use a copy of the regional file)
-    reg_fg_nc = Dataset(reg_fg)
+    reg_fg_nc = Dataset(reg_fg, mode="a")
     nlon = reg_fg_nc.dimensions["xaxis_1"].size  # 1820   (xaxis_2=1821)
     nlat = reg_fg_nc.dimensions["yaxis_2"].size  # 1092   (yaxis_1=1093)
     nlev = reg_fg_nc.dimensions["zaxis_1"].size  # 65
     Dx = 3.0
 
     # RRFS EnKF restart file fv_tracer.res.tile1 on ESG grid.
-    reg_fg_t = str(sys.argv[2])
+    reg_fg_t = str(sys.argv[4])
     # Open the blended file for updating the required vars (use a copy of the regional file)
-    reg_fg_t_nc = Dataset(reg_fg_t)
+    reg_fg_t_nc = Dataset(reg_fg_t, mode="a")
 
     # Check matching grids
     # Note: global_hyblev_fcst_rrfsL65.txt has 0.000 0.0000000 as the 66th row, so
     # don't compare glb_nlev and nlev because glb_nlev will be 66 and nlev will be 65.
-    # As a work around for now, we will just slice the top 65 levels of the global file
-    # and blend those with the regional file. The 66th level (bottom level) will not
-    # be changed since that level doesn't exist in the regional file. We may want to run
-    # chgres on the regional file to fix the differences in levels and to update more than
-    # just u_s and v_w; we might need to also update u_w and v_s.
+    # As a work around for now, we will just slice the top (or bottom?) 65 levels of
+    # the global file and blend those with the regional file.
     if (glb_nlon != nlon or glb_nlat != nlat or glb_Dx != Dx):
         print(f"glb_nlon:{glb_nlon} vs nlon:{nlon}")
         print(f"glb_nlat:{glb_nlat} vs nlat:{nlat}")
@@ -64,8 +55,9 @@ if blend:
     eps = (np.tan(pi*Dx/Lx))**-6  # 131319732.431162
 
     print(f"Input")
-    print(f"  regional forecast             : reg_fg ({model})")
-    print(f"  host model analysis/forecast  : glb_fg ({host})")
+    print(f"  RRFS restart (core)           : {reg_fg}")
+    print(f"  RRFS restart (tracer)         : {reg_fg_t}")
+    print(f"  GDAS coldstart from chgres    : {glb_fg}")
     print(f"  Lx                            : {Lx}")
     print(f"  Dx                            : {Dx}")
     print(f"  NLON                          : {nlon}")
@@ -73,13 +65,7 @@ if blend:
     print(f"  NLEV                          : {nlev}")
     print(f"  eps                           : {eps}")
     print(f"Output")
-    print(f"  Blended background file(s)    : {reg_fg}/{reg_fg_t}")
-
-    # print(raymond.raymond.__doc__)
-    # print(raymond.impfila.__doc__)
-    # print(raymond.filsub.__doc__)
-    # print(raymond.invlow_v.__doc__)
-    # print(raymond.rhsini.__doc__)
+    print(f"  Blended background file       : {reg_fg}, {reg_fg_t}")
 
     # Step 1. blend.
     for (var_fg, var_bg) in zip(vars_fg, vars_bg):
@@ -88,10 +74,9 @@ if blend:
 
         if var_fg == "sphum":
             reg_nc = reg_fg_t_nc
-            glb_nc = glb_fg_nc
         else:
             reg_nc = reg_fg_nc
-            glb_nc = glb_fg_nc
+        glb_nc = glb_fg_nc
 
         dim = len(np.shape(reg_nc[var_fg]))-1
         if dim == 2:  # 2D vars
@@ -107,7 +92,7 @@ if blend:
             var_work = np.zeros(shape=((nlon+nbdy), (nlat+nbdy), 1), dtype=np.float64)
             field_work = np.zeros(shape=((nlon+nbdy)*(nlat+nbdy)), dtype=np.float64)
         if dim == 3:  # 3D vars
-            glb = np.float64(glb_nc[var_bg][0:65, :, :])     # (65, 1093, 1820)
+            glb = np.float64(glb_nc[var_bg][:, :, :])
             reg = np.float64(reg_nc[var_fg][:, :, :, :])  # (1, 65, 1093, 1820)
             ntim = np.shape(reg)[0]
             nlev = np.shape(reg)[1]
@@ -133,17 +118,17 @@ if blend:
         var_out = var_work[nlon_start:nlon_end, nlat_start:nlat_end, :]
         if dim == 2:  # 2D vars
             var_out = var_out[:, :, 0] + regT[:, :, 0]
-            #var_out = np.reshape(var_out, [nlon, nlat, 1])  # add the time ("1") dimension back
+            var_out = np.reshape(var_out, [nlon, nlat, 1])  # add the time ("1") dimension back
         if dim == 3:  # 3D vars
             var_out = var_out + regT[:, :, :, 0]
-            #var_out = np.reshape(var_out, [nlon, nlat, nlev, 1])  # add the time ("1") dimension back
+            var_out = np.reshape(var_out, [nlon, nlat, nlev, 1])  # add the time ("1") dimension back
         var_out = np.transpose(var_out)  # (1, 50, 834, 954)
 
         # Overwrite blended fields to blended file.
         if dim == 2:  # 2D vars
-            glb_nc.variables[var_bg][:, :] = var_out
+            reg_nc.variables[var_fg][:, :, :] = var_out
         if dim == 3:  # 3D vars
-            glb_nc.variables[var_bg][0:65, :, :] = var_out
+            reg_nc.variables[var_fg][:, :, :, :] = var_out
 
     # Close nc files
     reg_nc.close()  # blended file
@@ -151,5 +136,4 @@ if blend:
 
     print("Blending finished successfully.")
 
-#tictoc.toc(tic, "Done. ")
 exit(0)

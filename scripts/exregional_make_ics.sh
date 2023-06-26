@@ -680,67 +680,155 @@ located in the following directory:
 #
 #-----------------------------------------------------------------------
 #
-# Run large scale blending
+# Run large-scale blending
 #
 #-----------------------------------------------------------------------
 # NOTES:
-# * Currently only blending: u, v, t, dpres, and sphum
-#     -) Make a copy of out.atm.tile7.nc (global file) since it will be overwritten.
-#     -) out.sfc.tile7.nc is not used
+# * The large-scale blending is broken down into 4 major parts
+#   1) chgres_winds: This part rotates the coldstart winds from chgres to the model D-grid.
+#                    It is based on atmos_cubed_sphere/tools/external_ic.F90#L433, and it
+#                    is equivalent to the fv3jedi tool called ColdStartWinds.
+#   2) remap_dwinds: This part vertically remaps the D-grid winds.
+#                    It is based on atmos_cubed_sphere/tools/external_ic.F90#L3485, and it
+#                    is part of the fv3jedi tool called VertRemap.
+#   3) remap_scalar: This part vertically remaps all other variables.
+#                    It is based on atmos_cubed_sphere/tools/external_ic.F90#L2942, and it
+#                    is the other part of the fv3jedi tool called VertRemap.
+#   4) raymond:      This is the actual blending code which uses the raymond filter. The
+#                    raymond filter is a sixth-order tangent low-pass implicit filter
+#                    and can be controlled via the cutoff length scale (Lx).
+#
+# * Currently blended fields: u, v, t, dpres, and sphum
 #     -) Blending only works with GDASENKF (netcdf)
+#
 # * Two RRFS EnKF member files are needed: fv_core and fv_tracer.
 #     -) fv_core contains u, v, t, and dpres
 #     -) fv_tracer contains sphum
-#     -) The yyyymmdd.180000.* restart files are located in
-#        yyyymdd17/mem00??/fcst_fv3lam/RESTART, so need to compute the
-#        current date minus 1 hour.
-#     -) The RRFS EnKF members can be linked because they are not overwritten.
-# * The RRFS EnKF member files are warm starts while the GDAS EnKF after chgres
-#   are cold starts so there will need to be some additional grid staggering
-#   transformation prior to blending. But not sure how. The cold start file has
-#   u_w, v_w, u_s, and v_s which possibly correspond to the C-/D-grid staggering.
-# * Question(s):
-#     1) do I only need to update u_s/v_w or all 4?
-#     2) should I run chgres on the RRFS EnKF member to get in cold start form?
-#     3) should global_hyblev_fcst_rrfsL65.txt have 0.000 0.0000000 as the 66th row?
-#        a) for now, just chop off the 66th row and blend the top 65 layers in the py scripts
 #
-# /lfs/h2/emc/stmp/donald.e.lippi/rrfs/June2022_retro/Ens_blending/v0.4.0/ensda/2022072018/mem0001/ics/tmp_ICS
+# * Before we can do any blending, the coldstart files from chgres need to be
+#   processed. This includes rotating the winds and vertically remapping all the
+#   variables. The cold start file has u_w, v_w, u_s, and v_s which correspond 
+#   to the D-grid staggering.
+#     -) u_s is the D-grid south tangential wind component (m/s)
+#     -) v_s is the D-grid south face normal wind component (m/s)
+#     -) u_w is the D-grid west  face tangential wind component (m/s)
+#     -) v_w is the D-grid west  face normal wind component (m/s)
+#     -) https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere/blob/bdeee64e860c5091da2d169b1f4307ad466eca2c/tools/external_ic.F90
+#     -) https://dtcenter.org/sites/default/files/events/2020/20201105-1300p-fv3-gfdl-1.pdf
 #
+
+set -x
+echo "current directory is: `pwd`"
+
 cdate_crnt_fhr_m1=$( date --utc --date "$yyyymmdd $hh UTC - 1 hours" "+%Y%m%d%H" )
-if [[ $cdate_crnt_fhr_m1 -ge ${DATE_FIRST_CYCL}${STARTHOUR} ]]; then
+echo current cycle date       : $cdate_crnt_fhr
+echo previous cycle date      : $cdate_crnt_fhr_m1
+echo first_cycle date         : ${DATE_FIRST_CYCL}${STARTHOUR}
+echo first blended cycle date : $FIRST_BLENDED_CYCLE_DATE
+if [[ $cdate_crnt_fhr -ge ${FIRST_BLENDED_CYCLE_DATE} ]]; then
 if [[ $DO_BLENDING == "TRUE" && $EXTRN_MDL_NAME_ICS == "GDASENKF" ]]; then
-   date
-   cp_vrfy $SCRIPTSDIR/da_blending_fv3.py .  # copy the blending script
-   ln_vrfy -sf $EXECDIR/raymond.cpython-38-x86_64-linux-gnu.so .  # link raymond f2py module
-   cp_vrfy out.atm.tile${TILE_RGNL}.nc out.atm.tile${TILE_RGNL}_unblended.nc
-   ln_vrfy -sf ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.fv_core.res.tile1.nc .
-   ln_vrfy -sf ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.fv_tracer.res.tile1.nc .
-   python ./da_blending_fv3.py ./out.atm.tile${TILE_RGNL}.nc ./${yyyymmdd}.${hh}0000.fv_core.res.tile1.nc ./${yyyymmdd}.${hh}0000.fv_tracer.res.tile1.nc
-   date
+
+   echo "Blending Starting."
+   ulimit -s unlimited
+   export OMP_STACKSIZE=2G
+   export OMP_NUM_THREADS="96"
+   export FI_OFI_RXM_SAR_LIMIT=3145728
+   export FI_MR_CACHE_MAX_COUNT=0
+   export MPICH_OFI_STARTUP_CONNECT=1
+
+   # Python/F2Py scripts
+   cp_vrfy $SCRIPTSDIR/da_blending_fv3.py .
+   cp_vrfy $SCRIPTSDIR/da_chgres_cold2fv3.py .
+
+   # F2Py shared object files
+   ln_vrfy -sf $EXECDIR/raymond.cpython-38-x86_64-linux-gnu.so .
+   ln_vrfy -sf $EXECDIR/chgres_winds.cpython-38-x86_64-linux-gnu.so .
+   ln_vrfy -sf $EXECDIR/remap_scalar.cpython-38-x86_64-linux-gnu.so .
+   ln_vrfy -sf $EXECDIR/remap_dwinds.cpython-38-x86_64-linux-gnu.so .
+
+   # Required NETCDF files -  HOST MODEL (e.g., GDAS; these files should already be present)
+   #cp_vrfy out.atm.tile${TILE_RGNL}.nc .
+   #cp_vrfy out.sfc.tile${TILE_RGNL}.nc .
+   #cp_vrfy gfs_ctrl.nc .
+
+   # Required NETCDF files - RRFS
+   cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.fv_core.res.tile1.nc ./fv_core.res.tile1.nc
+   cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.fv_tracer.res.tile1.nc ./fv_tracer.res.tile1.nc
+   cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.fv_core.res.nc ./fv_core.res.nc
+
+   # Required FIX files
+   cp_vrfy $FIXLAM/C3359_grid.tile7.nc .
+   cp_vrfy $FIXLAM/C3359_oro_data.tile7.halo0.nc .
+
+   # Shortcut the file names
+   warm=./fv_core.res.tile1.nc
+   cold=./out.atm.tile7.nc
+   grid=./C3359_grid.tile7.nc
+   akbk=./fv_core.res.nc
+   akbkcold=./gfs_ctrl.nc
+   orog=./C3359_oro_data.tile7.halo0.nc
+   bndy=./gfs.bndy.nc
+
+   # Run convert coldstart files to fv3 restart (rotate winds and remap).
+   python da_chgres_cold2fv3.py $warm $cold $grid $akbk $akbkcold $orog
+
+   # Shortcut the file names/arguments.
+   #Lx=960.0
+   Lx=$BLENDING_LENGTHSCALE
+   glb=./out.atm.tile${TILE_RGNL}.nc
+   reg=./fv_core.res.tile1.nc
+   trcr=./fv_tracer.res.tile1.nc
+
+   # Blend.
+   debug="NO"
+   if [[ $debug == "YES" ]]; then
+      cp ./fv_core.res.tile1.nc   ${ics_dir}/fv_core.res.tile1_orig.nc
+      cp ./fv_tracer.res.tile1.nc ${ics_dir}/fv_tracer.res.tile1_orig.nc
+      module load gsl nco
+   fi
+   python da_blending_fv3.py $Lx $glb $reg $trcr
+   mv_vrfy ./fv_core.res.tile1.nc ${ics_dir}/.
+   mv_vrfy ./fv_tracer.res.tile1.nc ${ics_dir}/.
+   if [[ $debug == "YES" ]]; then
+      ncdiff fv_core.res.tile1.nc fv_core.res.tile1_orig.nc diff.nc
+   fi
+
+   # Move the remaining RESTART files to INPUT
+   cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.coupler.res             ${ics_dir}/coupler.res
+   cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.fv_core.res.nc          ${ics_dir}/fv_core.res.nc
+   cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.fv_srf_wnd.res.tile1.nc ${ics_dir}/fv_srf_wnd.res.tile1.nc
+   cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.phy_data.nc             ${ics_dir}/phy_data.nc
+   cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.sfc_data.nc             ${ics_dir}/sfc_data.nc
+
+
 fi
 fi
+
 #
 #-----------------------------------------------------------------------
 #
 # Move initial condition, surface, control, and 0-th hour lateral bound-
-# ary files to ICs_BCs directory.
-#
+# ary files to ICs_BCs directory. Only do this if blending is off or on-
+# ly for the first DA cycle if blending is on inorder to coldstart the
+# system.
 #-----------------------------------------------------------------------
 #
-mv_vrfy out.atm.tile${TILE_RGNL}.nc \
+#if [[ $cdddate_crnt_fhr_m1 -lt ${DATE_FIRST_CYCL}${STARTHOUR} || $DO_BLENDING == "FALSE" ]]; then
+if [[ $cdate_crnt_fhr_m1 -lt ${FIRST_BLENDED_CYCLE_DATE} || $DO_BLENDING == "FALSE" ]]; then
+  mv_vrfy out.atm.tile${TILE_RGNL}.nc \
         ${ics_dir}/gfs_data.tile${TILE_RGNL}.halo${NH0}.nc
 
-mv_vrfy out.sfc.tile${TILE_RGNL}.nc \
+  mv_vrfy out.sfc.tile${TILE_RGNL}.nc \
         ${ics_dir}/sfc_data.tile${TILE_RGNL}.halo${NH0}.nc
 
-mv_vrfy gfs_ctrl.nc ${ics_dir}
+  mv_vrfy gfs_ctrl.nc ${ics_dir}
 
-mv_vrfy gfs.bndy.nc ${ics_dir}/gfs_bndy.tile${TILE_RGNL}.000.nc
+  mv_vrfy gfs.bndy.nc ${ics_dir}/gfs_bndy.tile${TILE_RGNL}.000.nc
+fi
 #
 #-----------------------------------------------------------------------
 #
-# copy results to nwges for longe time disk storage.
+# copy results to nwges for longer time disk storage.
 #
 #-----------------------------------------------------------------------
 #
