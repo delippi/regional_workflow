@@ -589,6 +589,8 @@ DA_CYCLE_INTERV="1"
 RESTART_INTERVAL="1 2"
 RESTART_INTERVAL_LONG="1 2"
 CYCL_HRS_HYB_FV3LAM_ENS=( "99" )
+FIRST_BLENDED_CYCLE="18"
+FIRST_BLENDED_CYCLE_DATE="YYYYMMDDHH"
 
 #-----------------------------------------------------------------------
 #
@@ -2201,6 +2203,7 @@ SKEB_INT="3600" #Variable "skebint" in input.nml
 SKEBNORM="1"
 SKEB_VDOF="10"
 USE_ZMTNBLCK="FALSE"
+BLENDING_LENGTHSCALE="960" # (Lx) in km
 #
 #-----------------------------------------------------------------------
 #
