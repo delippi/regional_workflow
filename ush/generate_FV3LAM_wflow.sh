@@ -545,6 +545,10 @@ settings="\
 #  retrospective experiments
 #
   'do_retro': ${DO_RETRO}
+#
+#  large-scale blending EnKF initialization
+#
+  'do_blending': ${DO_BLENDING}
 " # End of "settings" variable.
 
 print_info_msg $VERBOSE "
