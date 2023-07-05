@@ -2059,7 +2059,7 @@ TILE_SETS="full"
 # is because the radiance DA in EnKF relies the radiance procedures in the GSI-observer, 
 # which is mainly controled by DO_RADDA.
 #
-# DO_BLENDING:
+# DO_ENS_BLENDING:
 # Flag to perform large scale blending during initialization. If this is set to
 # "TRUE", then the RRFS EnKF will be blended with the external model ICS using
 # the Raymond filter (a low-pass, sixth-order implicit tangent filter).
@@ -2081,7 +2081,7 @@ DO_ENSPOST="FALSE"
 DO_ENSINIT="FALSE"
 DO_SAVE_DA_OUTPUT="FALSE"
 DO_ENS_RADDA="FALSE"
-DO_BLENDING="FALSE"
+DO_ENS_BLENDING="FALSE"
 #
 #-----------------------------------------------------------------------
 #
@@ -2199,7 +2199,7 @@ SKEB_INT="3600" #Variable "skebint" in input.nml
 SKEBNORM="1"
 SKEB_VDOF="10"
 USE_ZMTNBLCK="FALSE"
-BLENDING_LENGTHSCALE="960" # (Lx) in kilometers
+ENS_BLENDING_LENGTHSCALE="960" # (Lx) in kilometers
 #
 #-----------------------------------------------------------------------
 #

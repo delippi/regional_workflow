@@ -548,7 +548,7 @@ settings="\
 #
 #  large-scale blending EnKF initialization
 #
-  'do_blending': ${DO_BLENDING}
+  'do_ens_blending': ${DO_ENS_BLENDING}
 " # End of "settings" variable.
 
 print_info_msg $VERBOSE "

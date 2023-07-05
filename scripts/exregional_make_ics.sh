@@ -717,14 +717,10 @@ located in the following directory:
 #     -) https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere/blob/bdeee64e860c5091da2d169b1f4307ad466eca2c/tools/external_ic.F90
 #     -) https://dtcenter.org/sites/default/files/events/2020/20201105-1300p-fv3-gfdl-1.pdf
 #
-
 cdate_crnt_fhr_m1=$( date --utc --date "$yyyymmdd $hh UTC - 1 hours" "+%Y%m%d%H" )
-#echo current cycle date       : $cdate_crnt_fhr
-#echo previous cycle date      : $cdate_crnt_fhr_m1
-#echo first_cycle date         : ${DATE_FIRST_CYCL}${STARTHOUR}
-#echo first blended cycle date : $FIRST_BLENDED_CYCLE_DATE
-if [[ $cdate_crnt_fhr -ge ${FIRST_BLENDED_CYCLE_DATE} ]]; then
-if [[ $DO_BLENDING == "TRUE" && $EXTRN_MDL_NAME_ICS == "GDASENKF" ]]; then
+if [[ $DO_ENS_BLENDING == "TRUE" &&
+      $cdate_crnt_fhr -ge ${FIRST_BLENDED_CYCLE_DATE} &&
+      $EXTRN_MDL_NAME_ICS == "GDASENKF" ]]; then
 
    echo "Blending Starting."
    ulimit -s unlimited
@@ -771,7 +767,7 @@ if [[ $DO_BLENDING == "TRUE" && $EXTRN_MDL_NAME_ICS == "GDASENKF" ]]; then
    python da_chgres_cold2fv3.py $warm $cold $grid $akbk $akbkcold $orog
 
    # Shortcut the file names/arguments.
-   Lx=$BLENDING_LENGTHSCALE
+   Lx=$ENS_BLENDING_LENGTHSCALE
    glb=./out.atm.tile${TILE_RGNL}.nc
    reg=./fv_core.res.tile1.nc
    trcr=./fv_tracer.res.tile1.nc
@@ -780,9 +776,6 @@ if [[ $DO_BLENDING == "TRUE" && $EXTRN_MDL_NAME_ICS == "GDASENKF" ]]; then
    python da_blending_fv3.py $Lx $glb $reg $trcr
    mv_vrfy ./fv_core.res.tile1.nc ${ics_dir}/.
    mv_vrfy ./fv_tracer.res.tile1.nc ${ics_dir}/.
-   if [[ $debug == "YES" ]]; then
-      ncdiff fv_core.res.tile1.nc fv_core.res.tile1_orig.nc diff.nc
-   fi
 
    # Move the remaining RESTART files to INPUT
    cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.coupler.res             ${ics_dir}/coupler.res
@@ -792,7 +785,6 @@ if [[ $DO_BLENDING == "TRUE" && $EXTRN_MDL_NAME_ICS == "GDASENKF" ]]; then
    cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.sfc_data.nc             ${ics_dir}/sfc_data.nc
 
 
-fi
 fi
 
 #
@@ -804,7 +796,7 @@ fi
 # system.
 #-----------------------------------------------------------------------
 #
-if [[ $cdate_crnt_fhr_m1 -lt ${FIRST_BLENDED_CYCLE_DATE} || $DO_BLENDING == "FALSE" ]]; then
+if [[ $cdate_crnt_fhr_m1 -lt ${FIRST_BLENDED_CYCLE_DATE} || $DO_ENS_BLENDING == "FALSE" ]]; then
   mv_vrfy out.atm.tile${TILE_RGNL}.nc \
         ${ics_dir}/gfs_data.tile${TILE_RGNL}.halo${NH0}.nc
 
