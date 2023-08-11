@@ -774,8 +774,8 @@ if [[ $DO_ENS_BLENDING == "TRUE" &&
 
    # Blend.
    python da_blending_fv3.py $Lx $glb $reg $trcr
-   mv_vrfy ./fv_core.res.tile1.nc ${ics_dir}/.
-   mv_vrfy ./fv_tracer.res.tile1.nc ${ics_dir}/.
+   cp_vrfy ./fv_core.res.tile1.nc ${ics_dir}/.
+   cp_vrfy ./fv_tracer.res.tile1.nc ${ics_dir}/.
 
    # Move the remaining RESTART files to INPUT
    cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.coupler.res             ${ics_dir}/coupler.res
@@ -783,6 +783,8 @@ if [[ $DO_ENS_BLENDING == "TRUE" &&
    cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.fv_srf_wnd.res.tile1.nc ${ics_dir}/fv_srf_wnd.res.tile1.nc
    cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.phy_data.nc             ${ics_dir}/phy_data.nc
    cp_vrfy ${NWGES_BASEDIR}/${cdate_crnt_fhr_m1}${SLASH_ENSMEM_SUBDIR}/fcst_fv3lam/RESTART/${yyyymmdd}.${hh}0000.sfc_data.nc             ${ics_dir}/sfc_data.nc
+   cp_vrfy gfs_ctrl.nc ${ics_dir}
+   cp_vrfy gfs.bndy.nc ${ics_dir}/gfs_bndy.tile${TILE_RGNL}.000.nc
 
 
 fi
@@ -796,7 +798,7 @@ fi
 # system.
 #-----------------------------------------------------------------------
 #
-if [[ $cdate_crnt_fhr_m1 -lt ${FIRST_BLENDED_CYCLE_DATE} || $DO_ENS_BLENDING == "FALSE" ]]; then
+if [[ ($cdate_crnt_fhr -lt ${FIRST_BLENDED_CYCLE_DATE} && $DO_ENS_BLENDING == "TRUE") || $DO_ENS_BLENDING == "FALSE" ]]; then
   mv_vrfy out.atm.tile${TILE_RGNL}.nc \
         ${ics_dir}/gfs_data.tile${TILE_RGNL}.halo${NH0}.nc
 
@@ -816,6 +818,9 @@ fi
 #
 
 cp_vrfy ${ics_dir}/*.nc ${ics_nwges_dir}/.
+if [[ $DO_ENS_BLENDING == "TRUE" && $cdate_crnt_fhr -ge ${FIRST_BLENDED_CYCLE_DATE} ]]; then
+  cp_vrfy ${ics_dir}/coupler.res ${ics_nwges_dir}/.
+fi
 
 #
 #-----------------------------------------------------------------------
